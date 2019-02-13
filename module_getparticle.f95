@@ -40,6 +40,8 @@ subroutine write_particle(id)
    integer*4            :: ifile
    
    call get_particle(id,particle,ifile)
+   write(txt,'(A,A)')  'Simulation:  ',trim(para%simulation)
+   call out(txt)
    write(txt,'(A,I0)') 'Particle:    ',particle%id
    call out(txt)
    write(txt,'(A,I0)') 'Species:     ',particle%typ

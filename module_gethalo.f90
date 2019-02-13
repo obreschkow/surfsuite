@@ -269,6 +269,8 @@ subroutine write_halo_properties(haloid,halo)
    integer*4                              :: haloid
    type(type_halo),intent(in)  :: halo
    character(len=255)                     :: txt
+   write(txt,'(A,A)')  'Simulation:    ',trim(para%simulation)
+   call out(txt)
    write(txt,'(A,I0)') 'Halo:          ',haloid
    call out(txt)
    write(txt,'(A,I0)') 'File:          ',halo%file

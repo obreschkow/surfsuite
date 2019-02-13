@@ -94,8 +94,8 @@ subroutine task_renderhalo
    if (output) then
       call raster_to_bitmap(rgb,outputfile)
    else
-      call raster_to_bitmap(rgb,'tmp.bmp')
-      call system('open tmp.bmp')
+      call raster_to_bitmap(rgb,'.tmp.bmp')
+      call system('open .tmp.bmp')
    end if
 
 end subroutine task_renderhalo
