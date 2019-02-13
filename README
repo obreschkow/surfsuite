@@ -8,7 +8,7 @@ simulations, especially the SURFS simulations produced at ICRAR. In particular, 
 
 V0.5 01/03/2017: First release
 V0.6 18/04/2017: Update, better compatibility with pleiades
-v0.7 13/02/2019: Significant updates
+v0.7 13/02/2019: Significant updates, inclusion of HDF5 module, new rendering routine
 
 Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
 
