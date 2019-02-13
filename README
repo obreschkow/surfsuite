@@ -1,0 +1,127 @@
+OVERVIEW
+====================================================================================================================
+
+SurfSuite is a suite of Fortran routines to handle the particle data (positions and velocities) in large cosmological
+simulations, especially the SURFS simulations produced at ICRAR. In particular, the routines allow the user to
+(1) sort and quickly retrieve particles from single or multiple snapshot files produced by Gadget-2
+(2) rearrage and quickly retrieve all particles in a specific halo identified by VELOCIraptor
+
+V0.5 01/03/2017: First release
+V0.6 18/04/2017: Update, better compatibility with pleiades
+
+Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
+
+
+QUICK USE
+====================================================================================================================
+
+1) Make sure gfortran is installed (code tested for gfortran 4.4.7 and 5.0.0, other Fortran versions might work too)
+
+2) Compile SurfSuite using
+   > make clean
+   > make (edit make file, if needed)
+
+3) Edit file parameters.txt, especially
+   a) snapshot name
+   b) paths
+   c) HDF5-parameters (if working with VELOCIraptor halos). These parameters can be determined using the R-code
+      make_HDF5_parameters.R
+
+4) Place the single or multiple Gadget snapshot files snapshot_###[.#] and, if
+   available, the VELOCIraptor files snapshot_###.VELOCIraptor.hdf.catalog_groups[.#] and 
+   snapshot_###.VELOCIraptor.hdf.catalog_particles[.#] in the directories specified by the paths in parameters.txt
+   
+5) Sort the particles by increasing ID into files of identical size:
+   > ./surfsuite sortparticles
+   
+6) If VELOCIraptor output available, make halo files with all the particle positions and velocities
+   > ./surfsuite makehalos
+   
+7) Alternativel, run (6) and (7) in one step via
+   > ./surfsuite makeall
+   
+8) Access a single particle via
+   > ./surfsuite getparticle ###
+   
+9) Access a single halo via
+   > ./surfsuite gethalo ###
+   or store the particles of this halo in a file using
+   > ./surfsuite gethalo ### -outputfile ***
+
+
+ARGUMENTS
+====================================================================================================================
+
+Generally, SurfSuite is called as
+> ./surfsuite routine input [-option argument] [-option argument] ...
+
+The routines to choose from are
+
++ getsimulationinfo (no argument): returns basic properties of the Gadget simulation
+
++ sortparticles (no argument): sorts particles by ID into files of maximun size of 3.6 GB
+
++ makehalos (no argument): generates binary files, sequentially listing the particles of all halos with
+  species-indices, 3D-positions and 3D-velocities
+
++ makeall (no argument): runs 'sortparticles' and 'makehalos'
+
++ getparticle particleID: returns species, position and velocity of the specified particle
+
++ gethalo haloID: returns basic properties of the specified halo. Optional arguments:
+  -outputfile specifies the name of a file in which the particles of this halo are saved
+  -outputformat (default 1): only used if -outputfile given. 1 = binary file, 2 = ascii file.
+  -subhalos (default 0): only used if -outputfile given. 0 = do not save particles in subhalos,
+   1 = included particles in all generations of subhalos
+
++ analysis: [at the moment this routine is not documented and only used by the developpers]
+
+Optional arguments used by all routines
+
+-simulation (default L210_N512, only works on the pleiades cluster at ICRAR): specify the simulation
+ 
+-parameterfile (default parameters.txt): path+filename of parameter-file
+
+-snapshot (default as given in parameters.txt): overwrites the 'snapshot' string given in parameters.txt to allow
+ a quick access to a different snapshot, keeping all the other parameters identical
+
+-logfile (default none) allows the user to specify a path+filename for the screen-log, which is particularly usefull
+ if the code is executed using a queueing system
+ 
+-version: returns the version of SurfSuite
+
+
+
+FILE FORMATS
+====================================================================================================================
+
+Gadget-2 snapshots must be stored in one or multiple binary files "snapshot_###[.#]". Their format is the standard
+sequential binary format of Gadget-2 (for n particles):
+- Header (256 bytes)
+- Positions (n * 3 * real*4)
+- Velocities (n * 3 * real*4)
+- IDs (n * integer*4 or n * integer*8)
+- [additional properties, which will be ignored]
+
+Particle files produced by 'sortparticles', 'makehalos', 'gethalo' are as binary streams of exactly n*36 bytes
+- id(1),species(1),x(1),y(1),z(1),vx(1),vy(1),vz(1)
+...
+- id(n),species(n),x(n),y(n),z(n),vx(n),vy(n),vz(n)
+where id(i) is an 8-byte integer, species(i) is a 4-byte integer and the other 6 variables are 4-byte reals.
+The routine 'gethalo' can also write these files in ascii-format (-outputformat 2).
+
+The halo list produced by 'makehalos' is a binary stream of exactly nhalos*16 bytes, made of four integer*4 values
+giving, for each halo: the file index, position of first_particle, number of particles, parent halo ID.
+A parent halo ID of -1 is used for 1st generation halos.
+
+
+PACKAGED FILES
+====================================================================================================================
+
++ 'README' = this file
++ 'surfsuite.f95' main program
++ 'module_xxx.f95' various modules with subroutines
++ 'parameters.txt' example parameter file
++ 'makefile' contains the compiling instructions for the gfortran compiler.
++ 'queue.pbs' is an example script to be run on a cluster via qsub queue.pbs (specifically on ICRAR's Pleiades)
++ 'make_HDF5_parameters.R' R-routine to evaluate the HDF5 parameter needed in the file parameter.txt
