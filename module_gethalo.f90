@@ -3,6 +3,7 @@ module module_gethalo
 use module_global
 use module_system
 use module_io
+use module_hdf5
 
 implicit none
 
@@ -19,7 +20,7 @@ subroutine task_gethalo
    integer*4                  :: i
    logical                    :: output
    character(len=255)         :: outputfile
-   integer*4                  :: outputformat ! 1=binary, 2=ascii
+   integer*4                  :: outputformat ! 1=binary, 2=ascii, 3=hdf5
    integer*4                  :: subhalos
    type(type_halo)            :: halo
    
@@ -53,8 +54,8 @@ subroutine task_gethalo
             outputfile = trim(arg_value)
          case ('-outputformat')
             read(arg_value,*) outputformat
-            if ((outputformat<1).or.(outputformat>2)) then
-               call out('Error: outputformat must be 1 or 2.')
+            if ((outputformat<1).or.(outputformat>3)) then
+               call out('Error: outputformat must be 1, 2 or 3.')
                stop
             end if
          case ('-subhalos')
@@ -71,7 +72,7 @@ subroutine task_gethalo
    call load_halo_particles(haloid,subhalos==1,.false.)
    
    if (output) then
-      call save_halo(outputfile,outputformat)
+      call save_halo(outputfile,outputformat,haloid,halo)
    else
       call hline
       call write_halo_properties(haloid,halo)
@@ -246,10 +247,16 @@ subroutine load_halo_particles(haloid,include_subhalos,center_of_gravity)
 
 end subroutine load_halo_particles
 
-subroutine save_halo(outputfile,outputformat)
+subroutine save_halo(outputfile,outputformat,haloid,halo)
+
+   implicit none
    character(len=255),intent(in) :: outputfile
-   integer*4,intent(in)          :: outputformat ! 1=binary, 2=ascii
+   integer*4,intent(in)          :: outputformat ! 1=binary, 2=ascii, 3=hdf5
+   integer*4,intent(in)          :: haloid
+   type(type_halo),intent(in)    :: halo
    integer*8                     :: i
+   integer*4                     :: sub
+   
    if (outputformat==1) then
       open(1,file=trim(outputfile),action='write',form='unformatted',status='replace',access='stream')
       write(1) (p(i),i=1,nparticles)
@@ -258,6 +265,49 @@ subroutine save_halo(outputfile,outputformat)
       open(1,file=trim(outputfile),action='write',form='formatted',status='replace')
       write(1,'(I11,I2,3E17.10,3E14.6)') (p(i),i=1,nparticles)
       close(1)
+   else if (outputformat==3) then
+      
+      call hdf5_create(trim(outputfile)) ! create HDF5 file
+      call hdf5_open(trim(outputfile),.true.) ! open HDF5 file
+   
+      ! Group "simulation"
+      call hdf5_add_group('simulation')
+      call hdf5_write_data('simulation/name',trim(para%simulation),'simulation name')
+      call hdf5_write_data('simulation/box_l',para%L,'box side length')
+      call hdf5_write_data('simulation/box_n',para%N,'cubic root of particle number')
+      
+      ! Group "surfsuite"
+      call hdf5_add_group('surfsuite')
+      call hdf5_write_data('surfsuite/version',trim(version),'simulation of surfsuite used to extract the halo')
+      call hdf5_write_data('surfsuite/reference','Danail Obreschkow; danail.obreschkow@icrar.org')
+      
+      ! Group "halo"
+      call hdf5_add_group('halo')
+      call hdf5_write_data('halo/id',haloid,'unique halo id')
+      call hdf5_write_data('halo/parentid',halo%parentid,'id of parent halo')
+      call hdf5_write_data('halo/n_subhalos',halo%nchildren,'number of subhalos')
+      call hdf5_write_data('halo/file',halo%file,'surfsuite file number')
+      call hdf5_write_data('halo/n_particles',nparticles,'number of particles')
+      if (nparticles==halo%npart) then
+         sub = 0
+      else
+         sub = 1
+      end if
+      call hdf5_write_data('halo/includes_subhalos',sub,'logical flag (0/1 = subhalo particles are included/excluded)')
+      
+      ! Group "particles"
+      call hdf5_add_group('particles')
+      call hdf5_write_data('particles/id',p%id,'unique particle id')
+      call hdf5_write_data('particles/type',p%typ,'particle type (1 = dark matter, 2 = gas)')
+      call hdf5_write_data('particles/rx',p%x,'x-coordinate of position')
+      call hdf5_write_data('particles/ry',p%y,'y-coordinate of position')
+      call hdf5_write_data('particles/rz',p%z,'z-coordinate of position')
+      call hdf5_write_data('particles/vx',p%vx,'x-coordinate of velocity')
+      call hdf5_write_data('particles/vy',p%vy,'y-coordinate of velocity')
+      call hdf5_write_data('particles/vz',p%vz,'z-coordinate of velocity')
+      
+      call hdf5_close() ! close HDF5 file
+      
    else
       call out('Error: Unknown outputformat.')
       stop
@@ -266,8 +316,8 @@ end subroutine save_halo
 
 subroutine write_halo_properties(haloid,halo)
    implicit none
-   integer*4                              :: haloid
-   type(type_halo),intent(in)  :: halo
+   integer*4,intent(in)                   :: haloid
+   type(type_halo),intent(in)             :: halo
    character(len=255)                     :: txt
    write(txt,'(A,A)')  'Simulation:    ',trim(para%simulation)
    call out(txt)

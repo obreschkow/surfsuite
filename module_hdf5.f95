@@ -1,8 +1,10 @@
 module module_hdf5
 
+   ! Fortran HDF5 Module by Danail Obreschkow 2019
+
    use hdf5
    
-   private 
+   private
    public   :: hdf5_create, hdf5_open, hdf5_close
    public   :: hdf5_dataset_size
    public   :: hdf5_add_group
@@ -39,7 +41,6 @@ module module_hdf5
    integer*8,allocatable   :: i8(:)
    real*4,allocatable      :: r4(:)
    real*8,allocatable      :: r8(:)
-      
    
 contains
 
@@ -50,7 +51,7 @@ contains
       logical                       :: res
       inquire(file=trim(filename), exist=res)
       if ((.not.res).and.(.not.present(do_not_stop))) then
-         write(*,*) 'ERROR: File does not exist: '//trim(filename)
+         write(*,'(A)') 'HDF5 ERROR: File does not exist: '//trim(filename)
          stop
       end if
    end function exists
@@ -58,7 +59,7 @@ contains
    subroutine error(txt)
       implicit none
       character(*),intent(in) :: txt
-      write(*,*) 'ERROR: '//txt
+      write(*,'(A)') 'HDF5 ERROR: '//txt
       stop
    end subroutine error
 
@@ -129,9 +130,8 @@ contains
       integer(hid_t)                   :: dataspace
       integer(hsize_t), dimension(2)   :: dimsr, maxdimsr
    
-      ! determine number of galaxies
       call h5dopen_f(file_id, dataset, dataset_id, err) ! Open dataset
-      CALL h5dget_space_f(dataset_id, dataspace, err)
+      call h5dget_space_f(dataset_id, dataspace, err)
       call h5sget_simple_extent_ndims_f(dataspace, rankr, err)
       call h5sget_simple_extent_dims_f(dataspace, dimsr, maxdimsr, err)
       call h5dclose_f(dataset_id, err)
@@ -498,17 +498,20 @@ contains
       integer(hsize_t)                    :: size(2)
       integer(hid_t)                      :: dataset_id
       integer(hid_t)                      :: hdf_type
+      character(255)                      :: msg
          
       call h5dopen_f(file_id, dataset, dataset_id, err)
       call get_mem_type_id(dataset_id, hdf_type, detected_type)
       
       if (detected_type.ne.expected_type) then
+         write(msg,'(6A)') 'Expected type ',expected_type,' but detected type ', &
+         & detected_type,' in dataset ',dataset
          if (present(convert)) then
             if (.not.convert) then
-               call error('Expected type different from detected type in HDF5 file.')
+               call error(trim(msg))
             end if
          else 
-            call error('Expected type different from detected type in HDF5 file.')
+            call error(trim(msg))
          end if
       end if
       
@@ -550,7 +553,8 @@ contains
             deallocate(r8)
          end if
       case default
-         call error('unkown data type in HDF5 file')
+         write(msg,'(4A)') 'Unknown type ',detected_type,' in dataset ',dataset
+         call error(trim(msg))
       end select
       
       call h5dclose_f(dataset_id, err)

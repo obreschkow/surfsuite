@@ -83,7 +83,7 @@ subroutine task_renderhalo
    graph%npixels = 800
    graph%sidelength = 2
    graph%rotationvector = (/0.0,0.0,0.0/)
-   graph%smoothinglength = 0.1
+   graph%smoothinglength = 0.2
    graph%gamma = 0.6
    graph%lum = 1
    

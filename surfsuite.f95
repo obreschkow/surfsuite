@@ -20,12 +20,7 @@ program surfsuite
    narg = iargc() ! number of arguments
    
    if (narg==0) then
-      write(*,'(A)') 'The general use is surfsuite task [...] [-parameterfile ...] [-simulation ...] [-snapshot ...] [-logfile ...]'
-      !write(*,'(A)') '> surfsuite version'
-      !write(*,'(A)') module_sortparticles_use
-      write(*,'(A)') module_getparticle_use
-      !write(*,'(A)') module_makehalos_use
-      write(*,'(A)') module_gethalo_use
+      write(*,'(A)') 'The general use is: surfsuite task [-option ...]'
       write(*,'(A)') 'Consult the README file for additional information.'
       stop
    end if
@@ -73,7 +68,7 @@ program surfsuite
       call task_version
    case ('-version')
       call task_version
-   case ('getsimulationinfo')
+   case ('simulation')
       call task_getgadgetproperties
    case ('sortparticles')
       call task_sortparticles
@@ -82,12 +77,6 @@ program surfsuite
    case ('makeall')
       call task_sortparticles
       call task_makehalos
-   case ('makeallall')
-      do i = 63,200
-         write(para%snapshot,'(A,I0.3)') 'snapshot_',i
-         call task_sortparticles
-         call task_makehalos
-      end do
    case ('getparticle')
       call task_getparticle
    case ('gethalo')

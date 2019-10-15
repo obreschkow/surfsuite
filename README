@@ -4,11 +4,13 @@ OVERVIEW
 SurfSuite is a suite of Fortran routines to handle the particle data (positions and velocities) in large cosmological
 simulations, especially the SURFS simulations produced at ICRAR. In particular, the routines allow the user to
 (1) sort and quickly retrieve particles from single or multiple snapshot files produced by Gadget-2
-(2) rearrage and quickly retrieve all particles in a specific halo identified by VELOCIraptor
+(2) rearrage and quickly retrieve/render/analyse all particles in a specific halo identified by VELOCIraptor
 
 V0.5 01/03/2017: First release
 V0.6 18/04/2017: Update, better compatibility with pleiades
 v0.7 13/02/2019: Significant updates, inclusion of HDF5 module, new rendering routine
+v0.8 18/06/2019: Updated compiler flags, documentation, various fixes
+v0.9 15/10/2019: Added HDF5 outputs
 
 Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
 
@@ -24,8 +26,8 @@ QUICK USE
 4) Modify makefile as needed (e.g. update library paths) and compile the code
    > make
 5) Run test code by typing:
-   > ./surfsuite -version
-6) Configure parameter-file
+   > ./surfsuite version
+6) Edit the file parameters.txt to point to the correct paths and files
 7) Sort GADGET files and use Velociraptor outputs to write particles into halo files:
    > ./surfsuite makeall
 8) Test extracting the information of a single particle
@@ -43,24 +45,28 @@ Generally, SurfSuite is called as
 
 The routines to choose from are
 
-+ getsimulationinfo (no argument): returns basic properties of the Gadget simulation
++ version: returns the version of SurfSuite
 
-+ sortparticles (no argument): sorts particles by ID into files of maximun size of 3.6 GB
++ simulation: returns basic properties of the Gadget simulation
 
-+ makehalos (no argument): generates binary files, sequentially listing the particles of all halos with
-  species-indices, 3D-positions and 3D-velocities
++ sortparticles: sorts particles by ID into files of maximun size of 3.6 GB
 
-+ makeall (no argument): runs 'sortparticles' and 'makehalos'
++ makehalos: generates binary files, sequentially listing the particles of all halos with
+  species-indices, 3D-positions and 3D-velocities (see file formats below)
+
++ makeall: runs 'sortparticles' and 'makehalos'
 
 + getparticle particleID: returns species, position and velocity of the specified particle
 
 + gethalo haloID: returns basic properties of the specified halo. Optional arguments:
-  -outputfile specifies the name of a file in which the particles of this halo are saved
-  -outputformat (default 1): only used if -outputfile given. 1 = binary file, 2 = ascii file.
+  -outputfile: specifies the name of a file in which the particles of this halo are saved
+  -outputformat (default 1): only used if -outputfile given. 1 = binary file, 2 = ascii file, 3 = hdf5 file.
   -subhalos (default 0): only used if -outputfile given. 0 = do not save particles in subhalos,
    1 = included particles in all generations of subhalos
    
 + renderhalo haloID: produces an image of the group [still being developped]
+  -mode (default 0): 0 = render particles as points, 1 = render particles as smoothed points, 2 = show small trajectories
+  -subhalos (default 0): 0 = do not save particles in subhalos, 1 = included particles in all generations of subhalos
 
 + analysis: [at the moment this routine is not documented and only used by the developpers]
 
@@ -75,8 +81,6 @@ Optional arguments used by all routines
 
 -logfile (default none) allows the user to specify a path+filename for the screen-log, which is particularly usefull
  if the code is executed using a queueing system
- 
--version: returns the version of SurfSuite
 
 
 

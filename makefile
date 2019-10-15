@@ -1,9 +1,54 @@
-# compiler
+# Call as make [system=hyades,...] [mode=standard,dev]
+
+# system = computing system on which stingray is complied and executed
+# mode = compilation mode; allowed modes are 'standard' and 'dev'
+
+ifndef system
+   system = ems
+endif
+
+ifndef mode
+   mode = standard
+endif
+
+cflags = empty
+ifeq ($(mode),standard)
+   cflags = -O3 -fopenmp
+endif
+ifeq ($(mode),dev)
+   cflags = -O0 -fbounds-check -fwhole-file -ffpe-trap=invalid,zero,overflow -Wall -Wunused -Wuninitialized -Wsurprising -Wconversion
+endif
+ifeq ($(cflags),empty)
+   $(info ERROR unknown mode: '${mode}')
+stop
+endif
+
+# custom flags to load the HDF5 library
+sflags = empty
+ifeq ($(system),ems) # private laptop of developer Obreschkow
+   sflags = -I/usr/local/include -L/usr/local/lib -lhdf5_fortran -lhdf5 -L/usr/local/lib -llapack -lblas 
+endif
+ifeq ($(system),ism49) # private backup laptop of developer Obreschkow
+   sflags = -I/usr/local/lib/hdf5/include -L/usr/local/lib/hdf5/lib -lhdf5_fortran -lhdf5 -L/usr/local/lib -llapack -lblas # lapack flag needs to be changed
+endif
+ifeq ($(system),hyades) # in-house cluster at ICRAR/UWA
+   sflags = -I/opt/bldr/local/storage/hdf5/1.10.2/include -L/opt/bldr/local/storage/hdf5/1.10.2/lib -lhdf5_fortran -lhdf5 -L/usr/local/lib -llapack -lblas # lapack flag needs to be changed
+endif
+ifeq ($(sflags),empty)
+   $(info ERROR unknown system: '${system}')
+stop
+endif
+
+# concatenate compiler flags
+FCFLAGS = -g $(sflags) $(cflags)
+
+# Compiler
 FC = gfortran
 
-# compiler flags (try dfferent ones, if the default line does not work)
-#FCFLAGS = -g -O0 -L/usr/local/lib -llapack -lblas -I/usr/local/include -L/usr/local/lib -lhdf5_fortran -lhdf5 -fbounds-check -fwhole-file -ffpe-trap=invalid,zero,overflow,underflow -Wall -Wunused -Wuninitialized -Wsurprising -Wconversion
-FCFLAGS = -O3 -fopenmp -L/usr/local/lib -llapack -lblas -I/usr/local/include -L/usr/local/lib -lhdf5_fortran -lhdf5
+# user info
+$(info Compilation options:)
+$(info + Computing system = '${system}'.)
+$(info + Compiling mode = '${mode}'.)
 
 # List of executables to be built within the package
 PROGRAMS = surfsuite

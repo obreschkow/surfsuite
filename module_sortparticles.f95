@@ -4,6 +4,10 @@ use module_global
 use module_system
 use module_io
 
+private 
+public   :: task_sortparticles
+public   :: task_getgadgetproperties
+
 character(*),parameter  :: module_sortparticles_use = '> surfsuite sortparticles'
 integer*4               :: nfiles_gadget_unsorted
 integer*4               :: nfiles_sorted_particles
@@ -85,7 +89,7 @@ subroutine split_particles_into_sort_files
    ! variable declaration
    implicit none
    integer*8,parameter  :: nchunk_max = 10000000_8
-   character(len=255)   :: fn
+   character(len=255)   :: fn,str
    integer*4            :: np(6)
    integer*4            :: ifile_sorted,ifile_gadget
    integer*8            :: position
@@ -128,7 +132,7 @@ subroutine split_particles_into_sort_files
       fn = filename(ifile_gadget,para%path_gadget,para%snapshot)
       
       call tic
-      call out('SPLIT GADGET INTO SORTABLE FILES')
+      call out('SPLIT GADGET FILE INTO SORTABLE FILES')
       call out('Filename: '//trim(fn))
    
       ! read header
@@ -184,6 +188,10 @@ subroutine split_particles_into_sort_files
                iparticles_species = iparticles_species+nchunk
                iparticles_tot = iparticles_tot+nchunk
                
+               ! progress report
+               write(str,'(A,F5.1,A)') 'Progress: ',real(iparticles)/nparticles*100,'%'
+               call out(trim(str))
+               
             end do
             
          end if
@@ -191,6 +199,10 @@ subroutine split_particles_into_sort_files
       end do
    
       close(1)
+      
+      ! progress report
+      write(str,'(A,F5.1,A)') 'Progress: ',100.0,'%'
+      call out(trim(str))
       
       call toc
       
@@ -241,10 +253,14 @@ subroutine determine_gadget_snapshot_properties
    character(len=255)   :: txt
    
    call tic
-   call out('DETERMINE GADGET SNAPSHOT PROPERTIES')
+   call out('SUMMARY OF CURRENT SIMULAITON DATA')
+   
+   call out('Simulation: '//trim(para%simulation))
+   
+   call out('Snapshot: '//trim(para%snapshot))
    
    nfiles_gadget_unsorted = get_number_of_subfiles(trim(para%path_gadget)//trim(para%snapshot))
-   call out('Number of Gadget files per snapshot:',nfiles_gadget_unsorted*1_8)
+   call out('Number of Gadget files for this snapshot:',nfiles_gadget_unsorted*1_8)
    
    ! compute number of particles & check file sizes
    nparticles_tot = 0
@@ -269,7 +285,7 @@ subroutine determine_gadget_snapshot_properties
          stop
       else if ((extra>0).and.(i==0)) then
          call out('Warning: File contains more particle data than positions, velocities and IDs.')
-         call out('         These additional data which will be ignored.')
+         call out('         These additional data are be ignored by surfsuite.')
       end if
          
    end do
@@ -293,10 +309,10 @@ subroutine determine_gadget_snapshot_properties
       end if
    end do
    write(txt,'(A,I0,A,I0,A)') &
-      & 'This equals ',box,'^3 particles (for ',int(nparticles_tot/int(box,8)**3,4),' species)'
+      & 'This equals to ',box,'^3 particles (for ',int(nparticles_tot/int(box,8)**3,4),' species).'
    call out(txt)
    
-   call toc
+   call hline
    
 end subroutine determine_gadget_snapshot_properties
 
