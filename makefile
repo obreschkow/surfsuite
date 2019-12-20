@@ -63,8 +63,9 @@ surfsuite.o:   module_global.o \
                module_sortparticles.o \
                module_getparticle.o \
                module_makehalos.o \
+               module_processhalo.o \
                module_gethalo.o \
-               module_renderhalo.o \
+               module_showhalo.o \
                module_analysis.o
 surfsuite: 	   module_global.o \
                module_system.o \
@@ -72,9 +73,10 @@ surfsuite: 	   module_global.o \
                module_io.o \
                module_sortparticles.o \
                module_getparticle.o \
+               module_processhalo.o \
                module_makehalos.o \
                module_gethalo.o \
-               module_renderhalo.o \
+               module_showhalo.o \
                module_analysis.o
 
 # ======================================================================

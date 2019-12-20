@@ -1,6 +1,6 @@
 module module_global
 
-   character(*),parameter  :: version = '0.9'
+   character(*),parameter  :: version = '0.10'
 
    type type_para
       character(len=255)   :: parameterfile
@@ -34,9 +34,9 @@ module module_global
    
    type type_particle
       integer*8            :: id          ! unique identifiers
-      integer*4            :: typ         ! particle type
-      real*4               :: x,y,z       ! positions
-      real*4               :: vx,vy,vz    ! velocities
+      integer*4            :: species     ! particle species
+      real*4               :: x(3)        ! positions
+      real*4               :: v(3)        ! velocities
    end type type_particle
 
    integer*4,parameter     :: bytes_per_particle = 36 ! bytes per instance of type_particle
@@ -46,8 +46,8 @@ module module_global
    ! input arguments
    integer*4               :: narg
 
-   ! particle properties of single sub-snapshot
-   type(type_particle),allocatable  :: p(:)
-   integer*8                        :: nparticles           ! number of currently loaded particles, stored in the above arrays
-
+   ! currently loaded particles (can be a subvolume, a single halo, substructure, etc.)
+   type(type_particle),allocatable  :: p(:)        ! array of particle properties
+   integer*8                        :: nparticles  ! number of particles stored in p(:)
+   
 end module module_global

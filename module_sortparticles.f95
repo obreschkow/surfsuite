@@ -116,7 +116,6 @@ subroutine split_particles_into_sort_files
    ! allocate particle array
    if (allocated(p)) deallocate(p)
    allocate(p(nchunk_max),id4(nchunk_max))
-   p%x = 0; p%y = 0; p%z = 0; p%vx = 0; p%vy = 0; p%vz = 0; p%id = 1
    
    ! open all sorted files
    do ifile_sorted = 0,nfiles_sorted_particles-1
@@ -148,7 +147,7 @@ subroutine split_particles_into_sort_files
          if (np(species)>0) then
       
             iparticles_species = 0
-            p%typ = species
+            p%species = species
          
             do while (iparticles_species<np(species))
       
@@ -156,11 +155,11 @@ subroutine split_particles_into_sort_files
       
                ! read positions
                position = 269+iparticles*12
-               read(1,pos=position) (p(i)%x,p(i)%y,p(i)%z,i=1,nchunk)
+               read(1,pos=position) (p(i)%x(1),p(i)%x(2),p(i)%x(3),i=1,nchunk)
    
                ! read velocities
                position = 277+nparticles*12+iparticles*12
-               read(1,pos=position) (p(i)%vx,p(i)%vy,p(i)%vz,i=1,nchunk)
+               read(1,pos=position) (p(i)%v(1),p(i)%v(2),p(i)%v(3),i=1,nchunk)
          
                ! read IDs
                position = 285+nparticles*24+iparticles*bytesid
@@ -172,10 +171,10 @@ subroutine split_particles_into_sort_files
                end if
          
                ! measure ranges
-               xmin = minval((/xmin,minval(p%x),minval(p%y),minval(p%z)/))
-               xmax = maxval((/xmax,maxval(p%x),maxval(p%y),maxval(p%z)/))
-               idmin = min(idmin,minval(p%id))
-               idmax = max(idmax,maxval(p%id))
+               xmin = minval((/xmin,minval(p(1:nchunk)%x(1)),minval(p(1:nchunk)%x(2)),minval(p(1:nchunk)%x(3))/))
+               xmax = maxval((/xmax,maxval(p(1:nchunk)%x(1)),maxval(p(1:nchunk)%x(2)),maxval(p(1:nchunk)%x(3))/))
+               idmin = min(idmin,minval(p(1:nchunk)%id))
+               idmax = max(idmax,maxval(p(1:nchunk)%id))
    
                ! write particles into sorted files
                do i = 1,nchunk
@@ -189,7 +188,7 @@ subroutine split_particles_into_sort_files
                iparticles_tot = iparticles_tot+nchunk
                
                ! progress report
-               write(str,'(A,F5.1,A)') 'Progress: ',real(iparticles)/nparticles*100,'%'
+               write(str,'(A,F5.1,A)') 'Progress: ',real(iparticles)/real(nparticles)*100,'%'
                call out(trim(str))
                
             end do

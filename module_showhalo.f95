@@ -4,6 +4,7 @@ module module_showhalo
    use module_system
    use module_io
    use module_gethalo
+   use module_processhalo
 
    implicit none
 
@@ -29,17 +30,15 @@ subroutine task_showhalo
    character(len=255)         :: arg_option
    character(len=255)         :: arg_value
    integer*4                  :: i
-   character(len=255)         :: fnbase
    logical                    :: output
    character(len=255)         :: outputfile
    integer*4                  :: mode ! 1=binary, 2=ascii
-   integer*4                  :: subhalos
+   integer*4                  :: subhalos,projection
    type(type_halo)            :: halo
    
    ! checks
    if (narg<2) then
       call out('ERROR: Argument missing. Use')
-      call out(module_gethalo_use)
       stop
    else
       call getarg(2,arg_value)
@@ -50,6 +49,7 @@ subroutine task_showhalo
    output = .false.
    mode = 0
    subhalos = 0
+   projection = 1
    
    ! change default options
    if (narg>2) then
@@ -76,6 +76,12 @@ subroutine task_showhalo
                call out('Error: subhalos must be 0 or 1.')
                stop
             end if
+         case ('-projection')
+            read(arg_value,*) projection
+            if ((projection<1).or.(projection>3)) then
+               call out('Error: projection must be 1, 2 or 3.')
+               stop
+            end if
          end select
       end do
    end if
@@ -87,9 +93,9 @@ subroutine task_showhalo
    graph%gamma = 0.6
    graph%lum = 1
    
-   call load_halo_properties(haloid,halo)
-   call load_halo_particles(haloid,subhalos==1,.true.)
-   call raster_halo(mode)
+   call load_halo(haloid,subhalos==1,halo)
+   call center_particles
+   call raster_halo(mode,projection)
    
    if (output) then
       call raster_to_bitmap(rgb,outputfile)
@@ -100,17 +106,18 @@ subroutine task_showhalo
 
 end subroutine task_showhalo
 
-subroutine raster_halo(mode)
+subroutine raster_halo(mode,projection)
 
    implicit none
-   integer*4,intent(in)          :: mode
-   real*4,allocatable            :: f(:,:,:),x(:),y(:)
+   integer*4,intent(in)          :: mode,projection
+   real*4,allocatable            :: f(:,:,:),x(:),y(:),vx(:),vy(:)
    real*4,allocatable            :: kernel(:,:,:)
    integer*4                     :: nsmooth,npx
    integer*4                     :: kernelsteps = 50
-   integer*4                     :: species,i,j,k,ix,iy,n
+   integer*4                     :: j,k,ix,iy,n
    real*4                        :: q0,q,factor,x0,y0,dx,dy,dt,density
    real*8                        :: rrms,vrms
+   integer*8                     :: i
    
    ! make smoothing kernel
    nsmooth = int(graph%npixels*graph%smoothinglength/graph%sidelength*2)
@@ -135,19 +142,31 @@ subroutine raster_halo(mode)
       kernel(:,:,k) = kernel(:,:,k)/sum(kernel(:,:,k))
    end do
    
-   ! determine dt
-   rrms = sqrt(sum(real(p%x**2+p%y**2,8))/nparticles)
-   vrms = sqrt(sum(real(p%vx**2+p%vy**2,8))/nparticles)
-   dt = real(rrms/vrms*0.3,4)
-   density = nparticles/(rrms/graph%sidelength*graph%npixels)**2
-   npx = max(1,nint(dt*vrms/graph%sidelength*graph%npixels))
-   
    ! rotation
-   allocate(x(nparticles),y(nparticles))
-   x = p%x
-   y = p%y
-   !p%x = x*cos(1.0)+y*sin(1.0)
-   !p%y = y*cos(1.0)-x*sin(1.0)
+   allocate(x(nparticles),y(nparticles),vx(nparticles),vy(nparticles))
+   if (projection==1) then
+      x = p%x(1)
+      y = p%x(2)
+      vx = p%v(1)
+      vy = p%v(2)
+   else if (projection==2) then
+      x = p%x(2)
+      y = p%x(3)
+      vx = p%v(2)
+      vy = p%v(3)
+   else if (projection==3) then
+      x = p%x(3)
+      y = p%x(1)
+      vx = p%v(3)
+      vy = p%v(1)
+   end if
+   
+   ! determine dt
+   rrms = sqrt(sum(real(x**2+y**2,8))/nparticles)
+   vrms = sqrt(sum(real(vx**2+vy**2,8))/nparticles)
+   dt = real(rrms/vrms*0.3,4)
+   density = real(nparticles/(rrms/graph%sidelength*graph%npixels)**2,4)
+   npx = max(1,nint(dt*vrms/graph%sidelength*graph%npixels))
    
    ! raster channels
    allocate(f(1-2*nsmooth:graph%npixels+2*nsmooth,1-2*nsmooth:graph%npixels+2*nsmooth,6))
@@ -156,11 +175,11 @@ subroutine raster_halo(mode)
    if (mode == 0) then
    
       do i = 1,nparticles
-         ix = nint((p(i)%x/graph%sidelength+0.5)*graph%npixels)
+         ix = nint((x(i)/graph%sidelength+0.5)*graph%npixels)
          if ((ix>=1-nsmooth).and.(ix<=graph%npixels+nsmooth)) then
-            iy = nint((p(i)%y/graph%sidelength+0.5)*graph%npixels)
+            iy = nint((y(i)/graph%sidelength+0.5)*graph%npixels)
             if ((iy>=1).and.(iy<=graph%npixels)) then
-               f(ix,iy,p(i)%typ) = f(ix,iy,p(i)%typ)+1
+               f(ix,iy,p(i)%species) = f(ix,iy,p(i)%species)+1
             end if
          end if
       end do
@@ -168,13 +187,13 @@ subroutine raster_halo(mode)
    else if (mode == 1) then
    
       do i = 1,nparticles
-         ix = nint((p(i)%x/graph%sidelength+0.5)*graph%npixels)
+         ix = nint((x(i)/graph%sidelength+0.5)*graph%npixels)
          if ((ix>=1-nsmooth).and.(ix<=graph%npixels+nsmooth)) then
-            iy = nint((p(i)%y/graph%sidelength+0.5)*graph%npixels)
+            iy = nint((y(i)/graph%sidelength+0.5)*graph%npixels)
             if ((iy>=1).and.(iy<=graph%npixels)) then
-               k = min(nint(f(ix,iy,p(i)%typ)/density**2*12000+1),kernelsteps)
-               f(ix-nsmooth:ix+nsmooth,iy-nsmooth:iy+nsmooth,p(i)%typ) = &
-               &  f(ix-nsmooth:ix+nsmooth,iy-nsmooth:iy+nsmooth,p(i)%typ)+kernel(:,:,k)
+               k = min(nint(f(ix,iy,p(i)%species)/density**2*12000+1),kernelsteps)
+               f(ix-nsmooth:ix+nsmooth,iy-nsmooth:iy+nsmooth,p(i)%species) = &
+               &  f(ix-nsmooth:ix+nsmooth,iy-nsmooth:iy+nsmooth,p(i)%species)+kernel(:,:,k)
             end if
          end if
       end do
@@ -182,19 +201,19 @@ subroutine raster_halo(mode)
    else if (mode == 2) then
    
       do i = 1,nparticles
-         x0 = (p(i)%x/graph%sidelength+0.5)*graph%npixels
+         x0 = (x(i)/graph%sidelength+0.5)*graph%npixels
          if ((x0>=1-nsmooth).and.(x0<=graph%npixels+nsmooth)) then
-            y0 = (p(i)%y/graph%sidelength+0.5)*graph%npixels
+            y0 = (y(i)/graph%sidelength+0.5)*graph%npixels
             if ((y0>=1).and.(y0<=graph%npixels)) then
-               dx = p(i)%vx*dt/graph%sidelength*graph%npixels
+               dx = vx(i)*dt/graph%sidelength*graph%npixels
                if ((x0+dx>=1-nsmooth).and.(x0+dx<=graph%npixels+nsmooth)) then
-                  dy = p(i)%vy*dt/graph%sidelength*graph%npixels
+                  dy = vy(i)*dt/graph%sidelength*graph%npixels
                   if ((y0+dy>=1).and.(y0+dy<=graph%npixels)) then
                      n = nint(sqrt(dx**2+dy**2))+1
                      do k = -n,n
                         ix = nint(x0+real(k)/n/2*dx)
                         iy = nint(y0+real(k)/n/2*dy)
-                        f(ix,iy,p(i)%typ) = f(ix,iy,p(i)%typ)+1
+                        f(ix,iy,p(i)%species) = f(ix,iy,p(i)%species)+1
                      end do
                   end if
                end if
@@ -246,13 +265,13 @@ subroutine raster_to_bitmap(rgb,filename)
    write(1) 40,width,height,achar(1),achar(0),achar(24),achar(0),0,paddedsize,2835,2835,0,0 ! DIB header
    
    ! write array
-   do i = 1,height
-      do j = 1,width
+   do j = 1,width
+      do i = 1,height
          do k = 3,1,-1
             write(1) achar(nint(rgb(i,j,k)*255))
          end do
       end do
-      do j = 1,extrabytes
+      do i = 1,extrabytes
          write(1) achar(0)
       end do
    end do

@@ -4,10 +4,13 @@ use module_global
 use module_system
 use module_io
 use module_hdf5
+use module_processhalo
 
-implicit none
-
-character(*),parameter  :: module_gethalo_use = '> surfsuite gethalo ID [-outputfile ...] [-outputformat ...] [-subhalos 0/1]'
+private 
+public   :: task_gethalo
+public   :: nhalos
+public   :: load_halo_properties ! only load structure "halo"
+public   :: load_halo            ! load structure "halo" as well as particles
 
 contains
 
@@ -21,13 +24,13 @@ subroutine task_gethalo
    logical                    :: output
    character(len=255)         :: outputfile
    integer*4                  :: outputformat ! 1=binary, 2=ascii, 3=hdf5
-   integer*4                  :: subhalos
+   integer*4                  :: subhalos,center
    type(type_halo)            :: halo
    
    ! checks
    if (narg<2) then
       call out('ERROR: Argument missing. Use')
-      call out(module_gethalo_use)
+      call out('> surfsuite gethalo ID [-outputfile ...] [-outputformat ...] [-subhalos 0/1]')
       stop
    else
       call getarg(2,arg_value)
@@ -38,6 +41,7 @@ subroutine task_gethalo
    output = .false.
    outputformat = 1
    subhalos = 0
+   center = 0
    
    ! change default options
    if (narg>2) then
@@ -64,14 +68,20 @@ subroutine task_gethalo
                call out('Error: subhalos must be 0 or 1.')
                stop
             end if
+         case ('center')
+            read(arg_value,*) center
+            if ((center<0).or.(center>1)) then
+               call out('Error: center must be 0 or 1.')
+               stop
+            end if
          end select
       end do
    end if
    
-   call load_halo_properties(haloid,halo)
-   call load_halo_particles(haloid,subhalos==1,.false.)
+   call load_halo(haloid,subhalos==1,halo)
    
    if (output) then
+      if (center==1) call center_particles
       call save_halo(outputfile,outputformat,haloid,halo)
    else
       call hline
@@ -83,7 +93,7 @@ subroutine task_gethalo
 end subroutine task_gethalo
 
 integer*4 function nhalos()
-    
+
    implicit none
    character(len=255)   :: fn
    integer*8            :: filesize
@@ -101,98 +111,16 @@ integer*4 function nhalos()
 
 end function nhalos
 
-subroutine load_halo_properties(haloid,halo)
+subroutine load_halo(haloid,include_subhalos,halo)
 
    implicit none
-   integer*4,intent(in)                   :: haloid
-   type(type_halo),intent(out)            :: halo
-   character(len=255)                     :: fn
-   integer*8                              :: position
-   
-   if (haloid<1) then
-      call out('Error: HaloID below 1:',haloid*1_8)
-      stop
-   else if (haloid>nhalos()) then
-      call out('Error: HaloID too large:',haloid*1_8)
-      stop
-   end if
-   
-   fn = trim(para%path_surfsuite)//trim(para%snapshot)//trim(para%ext_halolist)
-   position = int(bytes_per_halo,8)*int(haloid-1,8)+1_8
-   open(1,file=trim(fn),action='read',form='unformatted',status='old',access='stream')
-   read(1,pos=position) halo
-   close(1)
-
-end subroutine load_halo_properties
-
-subroutine load_halo_particles(haloid,include_subhalos,center_of_gravity)
-
-   implicit none
-   integer*4,intent(in) :: haloid
-   logical,intent(in)   :: include_subhalos
-   logical,intent(in)   :: center_of_gravity
-   real*4               :: r0(3),v0(3)
-   real*4               :: dx,dy,dz
-   integer*4            :: nmain
-   type(type_halo)      :: halo
+   integer*4,intent(in)          :: haloid
+   logical,intent(in)            :: include_subhalos
+   type(type_halo),intent(out)   :: halo
 
    call load_particles(haloid,include_subhalos)
-   
    call load_halo_properties(haloid,halo)
-   nmain = halo%npart
    
-   if (center_of_gravity) then
-   
-      if (maxval(p%x)-minval(p%x)>para%L/2) then
-         dx = para%L/2
-         p%x = mod(p%x+dx,para%L)
-         if (maxval(p%x)-minval(p%x)>para%L/2) then
-            call out('ERROR: Halo larger than half the simulation box in x-direction.')
-            stop
-         end if
-      else
-         dx = 0
-      end if
-   
-      if (maxval(p%y)-minval(p%y)>para%L/2) then
-         dy = para%L/2
-         p%y = mod(p%y+dy,para%L)
-         if (maxval(p%y)-minval(p%y)>para%L/2) then
-            call out('ERROR: Halo larger than half the simulation box in y-direction.')
-            stop
-         end if
-      else
-         dy = 0
-      end if
-   
-      if (maxval(p%z)-minval(p%z)>para%L/2) then
-         dz = para%L/2
-         p%z = mod(p%z+dz,para%L)
-         if (maxval(p%z)-minval(p%z)>para%L/2) then
-            call out('ERROR: Halo larger than half the simulation box in z-direction.')
-            stop
-         end if
-      else
-         dz = 0
-      end if
-   
-      r0(1) = sum(p(1:nmain)%x)/real(nmain,4)
-      r0(2) = sum(p(1:nmain)%y)/real(nmain,4)
-      r0(3) = sum(p(1:nmain)%z)/real(nmain,4)
-      p%x = p%x-r0(1)
-      p%y = p%y-r0(2)
-      p%z = p%z-r0(3)
-   
-      ! center of mass velocities
-      v0(1) = sum(p(1:nmain)%vx)/real(nmain,4)
-      v0(2) = sum(p(1:nmain)%vy)/real(nmain,4)
-      v0(3) = sum(p(1:nmain)%vz)/real(nmain,4)
-      p%vx = p%vx-v0(1)
-      p%vy = p%vy-v0(2)
-      p%vz = p%vz-v0(3)
-   
-   end if
-
    contains
 
    recursive subroutine load_particles(haloid,include_subhalos,recursive_call)
@@ -200,7 +128,7 @@ subroutine load_halo_particles(haloid,include_subhalos,center_of_gravity)
       implicit none
       integer*4,intent(in)          :: haloid
       logical,intent(in)            :: include_subhalos
-      logical,intent(in),optional   :: recursive_call
+      logical,intent(in),optional   :: recursive_call ! this should only be true when called recursively from within this subroutine
       character(len=255)            :: fn
       integer*8                     :: position
       type(type_halo)               :: halo
@@ -214,6 +142,7 @@ subroutine load_halo_particles(haloid,include_subhalos,center_of_gravity)
          else
             nparticles = halo%npart
          end if
+         if (allocated(p)) deallocate(p)
          allocate(p(nparticles))
          nparticles = 0
       end if
@@ -245,27 +174,55 @@ subroutine load_halo_particles(haloid,include_subhalos,center_of_gravity)
    
    end subroutine load_particles
 
-end subroutine load_halo_particles
+end subroutine load_halo
+
+subroutine load_halo_properties(haloid,halo)
+
+   implicit none
+   integer*4,intent(in)                   :: haloid
+   type(type_halo),intent(out)            :: halo
+   character(len=255)                     :: fn
+   integer*8                              :: position
+   
+   if (haloid<1) then
+      call out('Error: HaloID below 1:',haloid*1_8)
+      stop
+   else if (haloid>nhalos()) then
+      call out('Error: HaloID too large:',haloid*1_8)
+      stop
+   end if
+   
+   fn = trim(para%path_surfsuite)//trim(para%snapshot)//trim(para%ext_halolist)
+   position = int(bytes_per_halo,8)*int(haloid-1,8)+1_8
+   open(1,file=trim(fn),action='read',form='unformatted',status='old',access='stream')
+   read(1,pos=position) halo
+   close(1)
+
+end subroutine load_halo_properties
 
 subroutine save_halo(outputfile,outputformat,haloid,halo)
 
    implicit none
    character(len=255),intent(in) :: outputfile
-   integer*4,intent(in)          :: outputformat ! 1=binary, 2=ascii, 3=hdf5
+   integer*4,intent(in)          :: outputformat ! 3=binary, 2=ascii, 1=hdf5
    integer*4,intent(in)          :: haloid
    type(type_halo),intent(in)    :: halo
    integer*8                     :: i
    integer*4                     :: sub
    
-   if (outputformat==1) then
+   if (outputformat==3) then
+   
       open(1,file=trim(outputfile),action='write',form='unformatted',status='replace',access='stream')
       write(1) (p(i),i=1,nparticles)
       close(1)
+      
    else if (outputformat==2) then
+   
       open(1,file=trim(outputfile),action='write',form='formatted',status='replace')
       write(1,'(I11,I2,3E17.10,3E14.6)') (p(i),i=1,nparticles)
       close(1)
-   else if (outputformat==3) then
+      
+   else if (outputformat==1) then
       
       call hdf5_create(trim(outputfile)) ! create HDF5 file
       call hdf5_open(trim(outputfile),.true.) ! open HDF5 file
@@ -273,7 +230,7 @@ subroutine save_halo(outputfile,outputformat,haloid,halo)
       ! Group "simulation"
       call hdf5_add_group('simulation')
       call hdf5_write_data('simulation/name',trim(para%simulation),'simulation name')
-      call hdf5_write_data('simulation/box_l',para%L,'box side length')
+      call hdf5_write_data('simulation/box_l',para%L,'[simulation units] box side length')
       call hdf5_write_data('simulation/box_n',para%N,'cubic root of particle number')
       
       ! Group "surfsuite"
@@ -287,7 +244,8 @@ subroutine save_halo(outputfile,outputformat,haloid,halo)
       call hdf5_write_data('halo/parentid',halo%parentid,'id of parent halo')
       call hdf5_write_data('halo/n_subhalos',halo%nchildren,'number of subhalos')
       call hdf5_write_data('halo/file',halo%file,'surfsuite file number')
-      call hdf5_write_data('halo/n_particles',nparticles,'number of particles')
+      call hdf5_write_data('halo/n_particles_main',halo%npart,'number of particles in main halo')
+      call hdf5_write_data('halo/n_particles',nparticles,'number of particles in file')
       if (nparticles==halo%npart) then
          sub = 0
       else
@@ -298,13 +256,13 @@ subroutine save_halo(outputfile,outputformat,haloid,halo)
       ! Group "particles"
       call hdf5_add_group('particles')
       call hdf5_write_data('particles/id',p%id,'unique particle id')
-      call hdf5_write_data('particles/type',p%typ,'particle type (1 = dark matter, 2 = gas)')
-      call hdf5_write_data('particles/rx',p%x,'x-coordinate of position')
-      call hdf5_write_data('particles/ry',p%y,'y-coordinate of position')
-      call hdf5_write_data('particles/rz',p%z,'z-coordinate of position')
-      call hdf5_write_data('particles/vx',p%vx,'x-coordinate of velocity')
-      call hdf5_write_data('particles/vy',p%vy,'y-coordinate of velocity')
-      call hdf5_write_data('particles/vz',p%vz,'z-coordinate of velocity')
+      call hdf5_write_data('particles/species',p%species,'particle species (1 = gas, 2 = dark matter)')
+      call hdf5_write_data('particles/rx',p%x(1),'[simulation units] x-coordinate of position')
+      call hdf5_write_data('particles/ry',p%x(2),'[simulation units] y-coordinate of position')
+      call hdf5_write_data('particles/rz',p%x(3),'[simulation units] z-coordinate of position')
+      call hdf5_write_data('particles/vx',p%v(1),'[simulation units] x-coordinate of velocity')
+      call hdf5_write_data('particles/vy',p%v(2),'[simulation units] y-coordinate of velocity')
+      call hdf5_write_data('particles/vz',p%v(3),'[simulation units] z-coordinate of velocity')
       
       call hdf5_close() ! close HDF5 file
       
@@ -344,19 +302,37 @@ end subroutine write_halo_properties
 subroutine write_halo_particle_stats
    implicit none
    character(len=255)   :: txt
+   character(len=12)    :: wrap
+   real*4               :: h
    if (nparticles>0) then
-      write(txt,'(A,F0.4,A,F0.4)') 'x-range:       ',minval(p%x),' to ',maxval(p%x)
+      h = para%L/2
+      if (maxval(p%x(1))-minval(p%x(1))>h) then
+         wrap = '   (wrapped)'
+      else
+         wrap = ''
+      end if
+      write(txt,'(A,F0.4,A,F0.4,A)') 'x-range:       ',minval(p%x(1)),' to ',maxval(p%x(1)),wrap
       call out(txt)
-      write(txt,'(A,F0.4,A,F0.4)') 'y-range:       ',minval(p%y),' to ',maxval(p%y)
+      if (maxval(p%x(2))-minval(p%x(2))>h) then
+         wrap = '   (wrapped)'
+      else
+         wrap = ''
+      end if
+      write(txt,'(A,F0.4,A,F0.4,A)') 'y-range:       ',minval(p%x(2)),' to ',maxval(p%x(2)),wrap
       call out(txt)
-      write(txt,'(A,F0.4,A,F0.4)') 'z-range:       ',minval(p%z),' to ',maxval(p%z)
+      if (maxval(p%x(3))-minval(p%x(3))>h) then
+         wrap = '   (wrapped)'
+      else
+         wrap = ''
+      end if
+      write(txt,'(A,F0.4,A,F0.4,A)') 'z-range:       ',minval(p%x(3)),' to ',maxval(p%x(3)),wrap
       call out(txt)
       write(txt,'(A,I0,A,I0,A,I0,A)')     'ID range:      ', &
       &minval(p%id),' to ',maxval(p%id),' (first: ',p(1)%id,')'
       call out(txt)
       write(txt,'(A,I0,A,I0,A,I0,A,I0,A,I0,A,I0,A,I0,A)') &
-      & '# particles:   ',nparticles,' (',count(p%typ==1),',',count(p%typ==2),',',count(p%typ==3),',',&
-      & count(p%typ==4),',',count(p%typ==5),',',count(p%typ==6),')'
+      & '# particles:   ',nparticles,' (',count(p%species==1),',',count(p%species==2),',',count(p%species==3),',',&
+      & count(p%species==4),',',count(p%species==5),',',count(p%species==6),')'
       call out(txt)
    end if
 end subroutine write_halo_particle_stats

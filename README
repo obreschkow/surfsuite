@@ -4,13 +4,14 @@ OVERVIEW
 SurfSuite is a suite of Fortran routines to handle the particle data (positions and velocities) in large cosmological
 simulations, especially the SURFS simulations produced at ICRAR. In particular, the routines allow the user to
 (1) sort and quickly retrieve particles from single or multiple snapshot files produced by Gadget-2
-(2) rearrage and quickly retrieve/render/analyse all particles in a specific halo identified by VELOCIraptor
+(2) rearrage and quickly retrieve/show/analyse all particles in a specific halo identified by VELOCIraptor
 
-V0.5 01/03/2017: First release
-V0.6 18/04/2017: Update, better compatibility with pleiades
-v0.7 13/02/2019: Significant updates, inclusion of HDF5 module, new rendering routine
-v0.8 18/06/2019: Updated compiler flags, documentation, various fixes
-v0.9 15/10/2019: Added HDF5 outputs
+V0.5  01/03/2017: First release
+V0.6  18/04/2017: Update, better compatibility with pleiades
+v0.7  13/02/2019: Significant updates, inclusion of HDF5 module, new showing routine
+v0.8  18/06/2019: Updated compiler flags, documentation, various fixes
+v0.9  15/10/2019: Added HDF5 outputs
+v0.10 15/11/2019: General clean up, improved gethalo routine
 
 Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
 
@@ -34,8 +35,9 @@ QUICK USE
    > ./surfsuite getparticle 1
 9) Test extracting the information of a single group
    > ./surfsuite gethalo 1
-10) Test rendering a halo
-   > ./surfsuite renderhalo 1
+10) Test showing a halo
+   > ./surfsuite showhalo 1
+
 
 ARGUMENTS
 ====================================================================================================================
@@ -60,23 +62,23 @@ The routines to choose from are
 
 + gethalo haloID: returns basic properties of the specified halo. Optional arguments:
   -outputfile: specifies the name of a file in which the particles of this halo are saved
-  -outputformat (default 1): only used if -outputfile given. 1 = binary file, 2 = ascii file, 3 = hdf5 file.
-  -subhalos (default 0): only used if -outputfile given. 0 = do not save particles in subhalos,
-   1 = included particles in all generations of subhalos
+  -outputformat (default 1): only used if -outputfile given. 1 = hdf5, 2 = ascii, 3 = binary
+  -shift (default 0): only used if -outputfile given. If set to 1, particle positions and velocities are
+   centered to the geometric center (=centre of mass if all species have identical masses)
    
-+ renderhalo haloID: produces an image of the group [still being developped]
-  -mode (default 0): 0 = render particles as points, 1 = render particles as smoothed points, 2 = show small trajectories
-  -subhalos (default 0): 0 = do not save particles in subhalos, 1 = included particles in all generations of subhalos
++ showhalo haloID: produces an image of the group [still being developped]
+  -mode (default 0): 0 = render particles as points, 1 = show particles as smoothed points, 2 = show small trajectories
+  -subhalos (default 0): 0 = do not show particles in subhalos, 1 = included particles in all generations of subhalos
 
 + analysis: [at the moment this routine is not documented and only used by the developpers]
 
 Optional arguments used by all routines
 
--simulation (default L210_N512, only works on the pleiades cluster at ICRAR): specify the simulation
- 
 -parameterfile (default parameters.txt): path+filename of parameter-file
 
--snapshot (default as given in parameters.txt): overwrites the 'snapshot' string given in parameters.txt to allow
+-simulation (default set in parameter-file): specify the simulation name in the parameterfile
+
+-snapshot (default set in parameter-file): overwrites the 'snapshot' string given in parameters.txt to allow
  a quick access to a different snapshot, keeping all the other parameters identical
 
 -logfile (default none) allows the user to specify a path+filename for the screen-log, which is particularly usefull

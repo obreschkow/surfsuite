@@ -44,13 +44,13 @@ subroutine write_particle(id)
    call out(txt)
    write(txt,'(A,I0)') 'Particle:    ',particle%id
    call out(txt)
-   write(txt,'(A,I0)') 'Species:     ',particle%typ
+   write(txt,'(A,I0)') 'Species:     ',particle%species
    call out(txt)
    write(txt,'(A,I0)') 'File #:      ',ifile
    call out(txt)
-   write(txt,'(A,F11.4,A,F11.4,A,F11.4)') 'Position: ',particle%x,' ',particle%y,' ',particle%z
+   write(txt,'(A,F11.4,A,F11.4,A,F11.4)') 'Position: ',particle%x(1),',',particle%x(2),',',particle%x(3)
    call out(txt)
-   write(txt,'(A,F11.4,A,F11.4,A,F11.4)') 'Velocity: ',particle%vx,' ',particle%vy,' ',particle%vz
+   write(txt,'(A,F11.4,A,F11.4,A,F11.4)') 'Velocity: ',particle%v(1),',',particle%v(2),',',particle%v(3)
    call out(txt)
    
 end subroutine write_particle

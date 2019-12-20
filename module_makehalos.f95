@@ -6,7 +6,9 @@ use module_io
 use module_hdf5
 use module_getparticle
 
-character(*),parameter  :: module_makehalos_use = '> surfsuite makehalos'
+private
+public   :: task_makehalos
+
 integer*4               :: nfiles_velociraptor
 integer*4               :: nfiles_sorted_particles
 

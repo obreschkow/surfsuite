@@ -5,7 +5,7 @@ snapshot          snapshot_199
 path_gadget       /Users/do/Data/SURFS/L210_N1024-Hydro/gadget
 path_velociraptor /Users/do/Data/SURFS/L210_N1024-Hydro/velociraptor
 path_surfsuite    /Users/do/Data/SURFS/L210_N1024-Hydro/surfsuite
-path_analysis     /Users/do/Data/SURFS/L210_N1024-Hydro/surfsuite/analysis
+path_analysis     /Users/do/Data/SURFS/L210_N1024-Hydro/surfsuite/analysis3dfof
 
 simulation        L210_N512
 L                 210
@@ -44,11 +44,11 @@ path_surfsuite    /Users/do/Data/SURFS/L210_N1536/surfsuite
 path_analysis     /Users/do/Data/SURFS/L210_N1536/surfsuite/analysis
 
 default
-ext_groups        .VELOCIraptor.catalog_groups
-ext_particles     .VELOCIraptor.catalog_particles
+ext_groups        .VELOCIraptor.3dfof.catalog_groups
+ext_particles     .VELOCIraptor.3dfof.catalog_particles
 ext_sorted        .sorted
-ext_halos         .halos
-ext_halolist      .halolist
+ext_halos         .3dfof.halos
+ext_halolist      .3dfof.halolist
 
 # INPUT FILES
 #

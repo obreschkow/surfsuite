@@ -6,7 +6,7 @@ program surfsuite
    use module_getparticle
    use module_makehalos
    use module_gethalo
-   use module_renderhalo
+   use module_showhalo
    use module_analysis
 
    implicit none
@@ -81,8 +81,8 @@ program surfsuite
       call task_getparticle
    case ('gethalo')
       call task_gethalo
-   case ('renderhalo')
-      call task_renderhalo
+   case ('showhalo')
+      call task_showhalo
    case ('analysis')
       call task_analysis
    case default
