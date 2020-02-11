@@ -16,7 +16,7 @@ ifeq ($(mode),standard)
    cflags = -O3 -fopenmp
 endif
 ifeq ($(mode),dev)
-   cflags = -O0 -fbounds-check -fwhole-file -ffpe-trap=invalid,zero,overflow -Wall -Wunused -Wuninitialized -Wsurprising -Wconversion
+   cflags = -O0 -fbounds-check -fcheck=bounds -fwhole-file -ffpe-trap=invalid,zero,overflow -Wall -Wunused -Wuninitialized -Wsurprising -Wconversion
 endif
 ifeq ($(cflags),empty)
    $(info ERROR unknown mode: '${mode}')
