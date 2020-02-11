@@ -1,12 +1,3 @@
-simulation        L210_N1024-Hydro-hyades
-L                 210
-N                 1024
-snapshot          snapshot_199
-path_gadget       /mnt/su3ctm/SURFS/L210_N1024-Hydro
-path_velociraptor /mnt/su3ctm/pelahi/waves/analysis/L210_1024-Hydro/newcatalogs
-path_surfsuite    /mnt/su3ctm/dobreschkow/SURFS/L210_N1024-Hydro
-path_analysis     /mnt/su3ctm/dobreschkow/SURFS/L210_N1024-Hydro
-
 simulation        L210_N1024-Hydro
 L                 210
 N                 1024
@@ -53,11 +44,11 @@ path_surfsuite    /Users/do/Data/SURFS/L210_N1536/surfsuite
 path_analysis     /Users/do/Data/SURFS/L210_N1536/surfsuite/analysis
 
 default
-ext_groups        .VELOCIraptor.6dfof.catalog_groups
-ext_particles     .VELOCIraptor.6dfof.catalog_particles
+ext_groups        .VELOCIraptor.3dfof.catalog_groups
+ext_particles     .VELOCIraptor.3dfof.catalog_particles
 ext_sorted        .sorted
-ext_halos         .halos
-ext_halolist      .halolist
+ext_halos         .3dfof.halos
+ext_halolist      .3dfof.halolist
 
 # INPUT FILES
 #
