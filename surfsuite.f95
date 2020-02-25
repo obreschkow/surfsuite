@@ -52,6 +52,14 @@ program surfsuite
    
    end do
    
+   if (trim(task_name)=='version') then
+      call require_task_value(.false.)
+      call require_no_options_left
+      write(*,'(A,A,A)') 'This is SurfSuite Version ',version,'.'
+      write(*,'(A)') 'Consult the README file for additional information.'
+      stop
+   end if
+   
    ! initialize logfile   
    call out_start
    
@@ -60,10 +68,6 @@ program surfsuite
 
    ! TASKS
    select case (trim(task_name))
-   case ('version')
-      call require_task_value(.false.)
-      call require_no_options_left
-      call task_version
    case ('simulation')
       call require_task_value(.false.)
       call require_no_options_left
@@ -91,16 +95,7 @@ program surfsuite
       call require_task_value(.true.)
       call task_showhalo
    case default
-      call out('ERROR: "'//trim(task_name)//'" is an unknown task.')
-      stop
+      call error('"'//trim(task_name)//'" is an unknown task.')
    end select
-   
-   contains
-
-   subroutine task_version
-      implicit none
-      write(*,'(A,A,A)') 'This is SurfSuite Version ',version,'.'
-      write(*,'(A)') 'Consult the README file for additional information.'
-   end subroutine task_version
     
 end program surfsuite

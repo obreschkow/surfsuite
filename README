@@ -41,7 +41,8 @@ QUICK START ON A GENERIC MACHINE
    > ./surfsuite gethalo 1
 10) Test showing a halo
    > ./surfsuite showhalo 1
-   
+
+
 QUICK START ON ICRAR-HYADES
 ====================================================================================================================
 # install
