@@ -16,6 +16,7 @@ v0.11 11/02/2019: improved description, cluster optimizations
 v0.12 21/02/2019: updated parameter files
 v0.13 23/02/2019: various fixes and clean ups
 v0.14 24/02/2019: more graphical parameters for showhalo, updated documentation
+v0.15 24/02/2019: added some file existence checks
 
 Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
 
@@ -61,8 +62,7 @@ make system=hyades # compile code
 # extract halo information for halo number 56 in the L210_N1024 run of SURFS
 ./surfsuite gethalo 56 -simulation L210_N1024-Hydro6D-hyades
 
-# to run a larger job, use SLURM, e.g.
-srun ./surfsuite makehalos -simulation L210_N1024-Hydro6D-hyades -logfile log.txt
+# to run a larger job, use SLURM
 
 
 ARGUMENTS
@@ -116,7 +116,6 @@ Optional arguments used by all routines
 
 -logfile (default none) allows the user to specify a path+filename for the screen-log, which is particularly usefull
  if the code is executed using a queueing system
-
 
 
 FILE FORMATS
