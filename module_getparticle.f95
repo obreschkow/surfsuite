@@ -1,5 +1,6 @@
 module module_getparticle
 
+use module_taskhandler
 use module_global
 use module_system
 use module_io
@@ -14,17 +15,8 @@ subroutine task_getparticle
 
    implicit none
    integer*8            :: particleid
-   character(len=255)   :: arg_value
    
-   if (narg<2) then
-      call out('ERROR: Argument missing. Use')
-      call out(module_getparticle_use)
-      stop
-   else
-      call getarg(2,arg_value)
-      read(arg_value,*) particleid
-   end if
-   
+   read(task_value,*) particleid
    call hline
    call write_particle(particleid)
    call hline

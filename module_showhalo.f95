@@ -1,5 +1,6 @@
 module module_showhalo
 
+   use module_taskhandler
    use module_global
    use module_system
    use module_io
@@ -7,17 +8,21 @@ module module_showhalo
    use module_processhalo
 
    implicit none
+   
+   private
+   public   :: task_showhalo
 
-   type type_show_options
+   type type_display_options
+      integer*4   :: mode
       integer*4   :: npixels
       real*4      :: sidelength ! [simulation units]
-      real*4      :: rotationvector(3) ! [rad]
       real*4      :: smoothinglength  ! [simulation units]
       real*4      :: gamma
       real*4      :: lum
-   end type type_show_options
+      integer*4   :: projection
+   end type type_display_options
 
-   type(type_show_options)  :: graph
+   type(type_display_options) :: graph
    real*4,allocatable         :: rgb(:,:,:)
 
 contains
@@ -27,75 +32,72 @@ subroutine task_showhalo
    implicit none
    
    integer*4                  :: haloid
-   character(len=255)         :: arg_option
-   character(len=255)         :: arg_value
    integer*4                  :: i
    logical                    :: output
    character(len=255)         :: outputfile
-   integer*4                  :: mode ! 1=binary, 2=ascii
-   integer*4                  :: subhalos,projection
+   integer*4                  :: subhalos
    type(type_halo)            :: halo
    
-   ! checks
-   if (narg<2) then
-      call out('ERROR: Argument missing. Use')
-      stop
-   else
-      call getarg(2,arg_value)
-      read(arg_value,*) haloid
-   end if
+   read(task_value,*) haloid
    
    ! default options
    output = .false.
-   mode = 0
    subhalos = 0
-   projection = 1
-   
-   ! change default options
-   if (narg>2) then
-      if ((narg+1)/2.eq.(narg+1)/2.0) then
-         call out('ERROR: Every option "-option" must have exactly one value.')
-         stop
-      end if
-      do i = 3,narg,2
-         call getarg(i,arg_option)
-         call getarg(i+1,arg_value)
-         select case (trim(arg_option))
-         case ('-outputfile')
-            output = .true.
-            outputfile = trim(arg_value)
-         case ('-mode')
-            read(arg_value,*) mode
-            if ((mode<0).or.(mode>2)) then
-               call out('Error: mode must be 0, 1 or 2.')
-               stop
-            end if
-         case ('-subhalos')
-            read(arg_value,*) subhalos
-            if ((subhalos<0).or.(subhalos>1)) then
-               call out('Error: subhalos must be 0 or 1.')
-               stop
-            end if
-         case ('-projection')
-            read(arg_value,*) projection
-            if ((projection<1).or.(projection>3)) then
-               call out('Error: projection must be 1, 2 or 3.')
-               stop
-            end if
-         end select
-      end do
-   end if
-   
+   graph%mode = 0
    graph%npixels = 800
    graph%sidelength = 2
-   graph%rotationvector = (/0.0,0.0,0.0/)
    graph%smoothinglength = 0.2
    graph%gamma = 0.6
    graph%lum = 1
+   graph%projection = 1
+   
+   ! handle options
+   do i = 1,n_options
+      select case (trim(option_name(i)))
+      case ('-outputfile')
+         call using_option(i)
+         output = .true.
+         outputfile = trim(option_value(i))
+      case ('-subhalos')
+         call using_option(i)
+         read(option_value(i),*) subhalos
+         if ((subhalos<0).or.(subhalos>1)) call error('subhalos must be 0 or 1.')
+      case ('-mode')
+         call using_option(i)
+         read(option_value(i),*) graph%mode
+         if ((graph%mode<0).or.(graph%mode>2)) call error('mode must be 0, 1 or 2.')
+      case ('-npixels')
+         call using_option(i)
+         read(option_value(i),*) graph%npixels
+         if (graph%npixels<=0) call error('npixels must be a positive integer.')
+      case ('-sidelength')
+         call using_option(i)
+         read(option_value(i),*) graph%sidelength
+         if (graph%sidelength<=0.0) call error('sidelength must be a positive real.')
+      case ('-smoothinglength')
+         call using_option(i)
+         read(option_value(i),*) graph%smoothinglength
+         if (graph%smoothinglength<=0.0) call error('smoothinglength must be a positive real.')
+      case ('-lum')
+         call using_option(i)
+         read(option_value(i),*) graph%lum
+         if (graph%lum<=0.0) call error('lum must be a positive real.')
+      case ('-gamma')
+         call using_option(i)
+         read(option_value(i),*) graph%gamma
+         if (graph%gamma<=0.0) call error('gamma must be a positive real.')
+      case ('-projection')
+         call using_option(i)
+         read(option_value(i),*) graph%projection
+         if ((graph%projection<1).or.(graph%projection>3)) call error('projection must be 1, 2 or 3.')
+      end select
+   end do
+   call require_no_options_left
+   if (graph%smoothinglength>=graph%sidelength) call error('smoothinglength must be smaller than sidelength')
    
    call load_halo(haloid,subhalos==1,halo)
    call center_particles
-   call raster_halo(mode,projection)
+   call raster_halo
    
    if (output) then
       call raster_to_bitmap(rgb,outputfile)
@@ -106,10 +108,9 @@ subroutine task_showhalo
 
 end subroutine task_showhalo
 
-subroutine raster_halo(mode,projection)
+subroutine raster_halo
 
    implicit none
-   integer*4,intent(in)          :: mode,projection
    real*4,allocatable            :: f(:,:,:),x(:),y(:),vx(:),vy(:)
    real*4,allocatable            :: kernel(:,:,:)
    integer*4                     :: nsmooth,npx
@@ -144,17 +145,17 @@ subroutine raster_halo(mode,projection)
    
    ! rotation
    allocate(x(nparticles),y(nparticles),vx(nparticles),vy(nparticles))
-   if (projection==1) then
+   if (graph%projection==1) then
       x = p%x(1)
       y = p%x(2)
       vx = p%v(1)
       vy = p%v(2)
-   else if (projection==2) then
+   else if (graph%projection==2) then
       x = p%x(2)
       y = p%x(3)
       vx = p%v(2)
       vy = p%v(3)
-   else if (projection==3) then
+   else if (graph%projection==3) then
       x = p%x(3)
       y = p%x(1)
       vx = p%v(3)
@@ -172,7 +173,7 @@ subroutine raster_halo(mode,projection)
    allocate(f(1-2*nsmooth:graph%npixels+2*nsmooth,1-2*nsmooth:graph%npixels+2*nsmooth,6))
    f = 0
    
-   if (mode == 0) then
+   if (graph%mode == 0) then
    
       do i = 1,nparticles
          ix = nint((x(i)/graph%sidelength+0.5)*graph%npixels)
@@ -184,7 +185,7 @@ subroutine raster_halo(mode,projection)
          end if
       end do
    
-   else if (mode == 1) then
+   else if (graph%mode == 1) then
    
       do i = 1,nparticles
          ix = nint((x(i)/graph%sidelength+0.5)*graph%npixels)
@@ -198,7 +199,7 @@ subroutine raster_halo(mode,projection)
          end if
       end do
       
-   else if (mode == 2) then
+   else if (graph%mode == 2) then
    
       do i = 1,nparticles
          x0 = (x(i)/graph%sidelength+0.5)*graph%npixels
@@ -228,7 +229,7 @@ subroutine raster_halo(mode,projection)
    f = f/density*2
    f = f**graph%gamma*graph%lum
    f = 1.0-exp(-f)
-   if ((mode == 0).or.(mode == 2)) where(f>0) f=0.1+0.9*f
+   if ((graph%mode == 0).or.(graph%mode == 2)) where(f>0) f=0.1+0.9*f
    
    ! convert to rgb
    allocate(rgb(graph%npixels,graph%npixels,3))

@@ -26,13 +26,13 @@ endif
 # custom flags to load the HDF5 library
 sflags = empty
 ifeq ($(system),ems) # private laptop of developer Obreschkow
-   sflags = -I/usr/local/include -L/usr/local/lib -lhdf5_fortran -lhdf5 -L/usr/local/lib -llapack -lblas 
+   sflags = -I/usr/local/include -L/usr/local/lib -lhdf5_fortran -lhdf5
 endif
 ifeq ($(system),ism49) # private backup laptop of developer Obreschkow
-   sflags = -I/usr/local/lib/hdf5/include -L/usr/local/lib/hdf5/lib -lhdf5_fortran -lhdf5 -L/usr/local/lib -llapack -lblas # lapack flag needs to be changed
+   sflags = -I/usr/local/lib/hdf5/include -L/usr/local/lib/hdf5/lib -lhdf5_fortran -lhdf5 -L/usr/local/lib
 endif
 ifeq ($(system),hyades) # in-house cluster at ICRAR/UWA
-   sflags = -I/opt/bldr/local/storage/hdf5/1.10.2/include -L/opt/bldr/local/storage/hdf5/1.10.2/lib -lhdf5_fortran -lhdf5 -L/usr/local/lib -llapack -lblas # lapack flag needs to be changed
+   sflags = -I/opt/bldr/local/storage/hdf5/1.10.2/include -L/opt/bldr/local/storage/hdf5/1.10.2/lib -lhdf5_fortran -lhdf5
 endif
 ifeq ($(sflags),empty)
    $(info ERROR unknown system: '${system}')
@@ -56,7 +56,8 @@ PROGRAMS = surfsuite
 # "make" builds all
 all: $(PROGRAMS)
 
-surfsuite.o:   module_global.o \
+surfsuite.o:   module_taskhandler.o \
+               module_global.o \
                module_system.o \
                module_hdf5.o \
                module_io.o \
@@ -65,9 +66,9 @@ surfsuite.o:   module_global.o \
                module_makehalos.o \
                module_processhalo.o \
                module_gethalo.o \
-               module_showhalo.o \
-               module_analysis.o
-surfsuite: 	   module_global.o \
+               module_showhalo.o
+surfsuite: 	   module_taskhandler.o \
+               module_global.o \
                module_system.o \
                module_hdf5.o \
                module_io.o \
@@ -76,8 +77,7 @@ surfsuite: 	   module_global.o \
                module_processhalo.o \
                module_makehalos.o \
                module_gethalo.o \
-               module_showhalo.o \
-               module_analysis.o
+               module_showhalo.o
 
 # ======================================================================
 # And now the general rules, these should not require modification

@@ -1,6 +1,6 @@
 module module_global
 
-   character(*),parameter  :: version = '0.11'
+   character(*),parameter  :: version = '0.13'
 
    type type_para
       character(len=255)   :: parameterfile
@@ -43,11 +43,11 @@ module module_global
    integer*4,parameter     :: bytes_per_halo = 32 ! bytes per instance of type_halo
    integer*8,parameter     :: nparticles_per_sorted_file = 100000000_8
 
-   ! input arguments
-   integer*4               :: narg
-
    ! currently loaded particles (can be a subvolume, a single halo, substructure, etc.)
    type(type_particle),allocatable  :: p(:)        ! array of particle properties
    integer*8                        :: nparticles  ! number of particles stored in p(:)
+   
+   ! physical/mathematical constants
+   real*4,parameter        :: pi = 3.14159265358979
    
 end module module_global

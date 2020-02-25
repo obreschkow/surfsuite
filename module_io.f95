@@ -121,6 +121,7 @@ subroutine load_parameters(forced_snapshot)
    integer                    :: io
    logical                    :: parameter_written(12)
    integer*4                  :: i
+   logical                    :: simulation_exists
    
    call check_exists(para%parameterfile)
    
@@ -128,6 +129,7 @@ subroutine load_parameters(forced_snapshot)
    
    parameter_written = .false.
    current = ''
+   simulation_exists = .false.
    
    open(1,file=trim(para%parameterfile),action='read',form='formatted')
    do
@@ -140,7 +142,12 @@ subroutine load_parameters(forced_snapshot)
             case ('default')
                current = 'default'
             case ('simulation')
-               if (para%simulation=='') para%simulation = trim(var_value)
+               if (para%simulation=='') then
+                  para%simulation = trim(var_value)
+                  simulation_exists = .true.
+               else
+                  if (para%simulation == trim(var_value)) simulation_exists = .true.
+               end if
                current = trim(var_value)
             case ('snapshot')
                if (iscurrent(1).and.(trim(forced_snapshot)=='')) para%snapshot = trim(var_value)
@@ -179,6 +186,11 @@ subroutine load_parameters(forced_snapshot)
       end if
    end do
    close(1)
+   
+   if (.not.simulation_exists) then
+      call out('ERROR: specified simulation does not exist in parameter file.')
+      stop
+   end if
    
    do i = 1,size(parameter_written)
       if (.not.parameter_written(i)) then

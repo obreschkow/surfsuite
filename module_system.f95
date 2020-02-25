@@ -1,5 +1,6 @@
 module module_system
 
+use module_taskhandler
 use module_global
 
 ! computation time evaluation
@@ -7,47 +8,12 @@ integer*8               :: tstart_total
 integer*8               :: tstart
 integer*8               :: trate
 
-! screen output
-character(len=255)      :: logfilename
-logical                 :: opt_logfile
-
 contains
 
 subroutine hline
    implicit none
    call out('----------------------------------------------------------------------------------')
 end subroutine hline
-
-subroutine out_open
-   implicit none
-   if (opt_logfile) then
-      open(9,file=trim(logfilename),action='write',status='replace',form='formatted')
-      write(9,'(A)') '----------------------------------------------------------------------------------'
-      write(9,'(A)') 'Logfile SurfSuite Version '//version
-      close(9)
-   end if
-end subroutine out_open
-
-subroutine out(txt,i)
-   implicit none
-   character(*),intent(in)       :: txt
-   integer*8,intent(in),optional :: i
-   if (opt_logfile) then
-      open(9,file=trim(logfilename),action='write',status='old',position='append',form='formatted')
-      if (present(i)) then
-         write(9,'(A,I0)') trim(txt)//' ',i
-      else
-         write(9,'(A)') trim(txt)
-      end if
-      close(9)
-   else
-      if (present(i)) then
-         write(*,'(A,I0)') trim(txt)//' ',i
-      else
-         write(*,'(A)') trim(txt)
-      end if
-   end if
-end subroutine out
 
 subroutine tic
    implicit none
@@ -132,41 +98,5 @@ function noslash(strin) result(strout)
       strout = strin
    end if
 end function noslash
-
-subroutine eigen(A,values,vectors)
-
-   ! returns the eigenvalues (from smallest to largest)
-   ! and optionally the eigenvectors vectors(:,1), vectors(:,2), ...
-   ! requires LAPACK
-   
-   implicit none
-   real*4,intent(in)             :: A(:,:)   ! symmetric NxN matrix
-   real*4,intent(out)            :: values(:)
-   real*4,intent(out),optional   :: vectors(:,:)
-   real*4,allocatable            :: W(:)     ! eigenvalues
-   real*4,allocatable            :: S(:,:)
-   integer*4                     :: N        ! order of the matrix
-   integer*4                     :: lwork,info
-   integer*4,parameter           :: lwmax = 1000
-   real*4                        :: work(lwmax)
-   
-   allocate(S(size(A,1),size(A,2)))
-   S = A
-   N = size(S,1)
-   allocate(W(N))
-   
-   ! Query the optimal workspace.
-   lwork = -1
-   CALL sSYEV( 'Vectors', 'Upper', N, S, N, W, work, lwork, info)
-   lwork = min(lwmax,int(work(1),4))
-   
-   ! Solve eigenproblem.
-   CALL sSYEV( 'Vectors', 'Upper', N, S, N, W, work, lwork, info)
-   
-   ! Return results
-   values = W
-   if (present(vectors)) vectors = S
-   
-end subroutine eigen
 
 end module module_system

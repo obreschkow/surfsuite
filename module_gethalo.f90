@@ -1,16 +1,17 @@
 module module_gethalo
 
-use module_global
-use module_system
-use module_io
-use module_hdf5
-use module_processhalo
+   use module_taskhandler
+   use module_global
+   use module_system
+   use module_io
+   use module_hdf5
+   use module_processhalo
 
-private 
-public   :: task_gethalo
-public   :: nhalos
-public   :: load_halo_properties ! only load structure "halo"
-public   :: load_halo            ! load structure "halo" as well as particles
+   private 
+   public   :: task_gethalo
+   public   :: nhalos
+   public   :: load_halo_properties ! only load structure "halo"
+   public   :: load_halo            ! load structure "halo" as well as particles
 
 contains
 
@@ -18,8 +19,6 @@ subroutine task_gethalo
 
    implicit none
    integer*4                  :: haloid
-   character(len=255)         :: arg_option
-   character(len=255)         :: arg_value
    integer*4                  :: i
    logical                    :: output
    character(len=255)         :: outputfile
@@ -27,15 +26,7 @@ subroutine task_gethalo
    integer*4                  :: subhalos,center
    type(type_halo)            :: halo
    
-   ! checks
-   if (narg<2) then
-      call out('ERROR: Argument missing. Use')
-      call out('> surfsuite gethalo ID [-outputfile ...] [-outputformat ...] [-subhalos 0/1]')
-      stop
-   else
-      call getarg(2,arg_value)
-      read(arg_value,*) haloid
-   end if
+   read(task_value,*) haloid
    
    ! default options
    output = .false.
@@ -43,45 +34,44 @@ subroutine task_gethalo
    subhalos = 0
    center = 0
    
-   ! change default options
-   if (narg>2) then
-      if ((narg+1)/2.eq.(narg+1)/2.0) then
-         call out('ERROR: Every option "-option" must have exactly one value.')
-         stop
-      end if
-      do i = 3,narg,2
-         call getarg(i,arg_option)
-         call getarg(i+1,arg_value)
-         select case (trim(arg_option))
-         case ('-outputfile')
-            output = .true.
-            outputfile = trim(arg_value)
-         case ('-outputformat')
-            read(arg_value,*) outputformat
-            if ((outputformat<1).or.(outputformat>3)) then
-               call out('Error: outputformat must be 1, 2 or 3.')
-               stop
-            end if
-         case ('-subhalos')
-            read(arg_value,*) subhalos
-            if ((subhalos<0).or.(subhalos>1)) then
-               call out('Error: subhalos must be 0 or 1.')
-               stop
-            end if
-         case ('center')
-            read(arg_value,*) center
-            if ((center<0).or.(center>1)) then
-               call out('Error: center must be 0 or 1.')
-               stop
-            end if
-         end select
-      end do
-   end if
+   ! handle options
+   do i = 1,n_options
+      select case (trim(option_name(i)))
+      case ('-outputfile')
+         call using_option(i)
+         output = .true.
+         outputfile = trim(option_value(i))
+      case ('-outputformat')
+         call using_option(i)
+         read(option_value(i),*) outputformat
+         if ((outputformat<1).or.(outputformat>3)) then
+            call out('Error: outputformat must be 1, 2 or 3.')
+            stop
+         end if
+      case ('-subhalos')
+         call using_option(i)
+         read(option_value(i),*) subhalos
+         if ((subhalos<0).or.(subhalos>1)) then
+            call out('Error: subhalos must be 0 or 1.')
+            stop
+         end if
+      case ('-center')
+         call using_option(i)
+         read(option_value(i),*) center
+         if ((center<0).or.(center>1)) then
+            call out('Error: center must be 0 or 1.')
+            stop
+         end if
+      end select
+   end do
+   call require_no_options_left
    
+   ! load halo
    call load_halo(haloid,subhalos==1,halo)
+   if (center==1) call center_particles
    
+   ! write/save halo
    if (output) then
-      if (center==1) call center_particles
       call save_halo(outputfile,outputformat,haloid,halo)
    else
       call hline
