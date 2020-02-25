@@ -45,23 +45,24 @@ QUICK START ON A GENERIC MACHINE
 
 QUICK START ON ICRAR-HYADES
 ====================================================================================================================
-# install
-rm -rf surfsuite/
-git clone https://github.com/obreschkow/surfsuite
 
-# compile
-cd surfsuite
-module load gfortran/6.3.0 hdf5/1.10.2
-make system=hyades
-
-# check
-./surfsuite version
+# setup
+rm -rf surfsuite/ # remove previous surfsuite directory
+git clone https://github.com/obreschkow/surfsuite # install updated version
+cd surfsuite # change to surfsuite directory
+module load gfortran/6.3.0 hdf5/1.10.2 # load required modules
+make system=hyades # compile code
+./surfsuite version # check version
 
 # extract particle information for particle number 134 in the L210_N1024 run of SURFS
-./surfsuite getparticle 134 -simulation L210_N1024-Hydro-hyades -parameterfile /home/dobreschkow/surfsuite/parameters.txt
+# note: it may be necessary to specify the parameter file location using the option "-parameterfile"
+./surfsuite getparticle 134 -simulation L210_N1024-Hydro6D-hyades
 
 # extract halo information for halo number 56 in the L210_N1024 run of SURFS
-./surfsuite gethalo 56 -simulation L210_N1024-Hydro-hyades -parameterfile /home/dobreschkow/surfsuite/parameters.txt
+./surfsuite gethalo 56 -simulation L210_N1024-Hydro6D-hyades
+
+# to run a larger job, use SLURM, e.g.
+srun ./surfsuite makehalos -simulation L210_N1024-Hydro6D-hyades -logfile log.txt
 
 
 ARGUMENTS

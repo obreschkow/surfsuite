@@ -222,8 +222,11 @@ subroutine makehalos
    ifileold = -1
    positionold = -1
    do ifile = 0,nfiles_sorted_particles-1
-      open(ifile+1000,file=trim(filename(ifile,para%path_surfsuite,para%snapshot,para%ext_sorted)), &
-      & action='read',form='unformatted',status='old',access='stream')
+      fn = trim(filename(ifile,para%path_surfsuite,para%snapshot,para%ext_sorted))
+      if (exists(trim(fn))) then
+         open(ifile+1000,file=trim(fn), &
+         & action='read',form='unformatted',status='old',access='stream')
+      end if
    end do
    call toc
    

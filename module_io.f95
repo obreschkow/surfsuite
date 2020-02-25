@@ -12,8 +12,7 @@ function exists(filename,do_not_stop) result(res)
    logical                       :: res
    inquire(file=trim(filename), exist=res)
    if ((.not.res).and.(.not.present(do_not_stop))) then
-      call out('ERROR: File does not exist: '//trim(filename))
-      stop
+      call error('File does not exist: '//trim(filename))
    end if
 end function exists
 
@@ -52,10 +51,7 @@ function filename(index,part1,part2,part3,multi) result(fn)
       if (multi) then
          fn = trim(filebasedot)
       else
-         if (index>0) then
-            call out('Error in function filename(): single file with index>0')
-            stop
-         end if
+         if (index>0) call error('Error in function filename(): single file with index>0')
          fn = trim(filebase)
       end if
    else
@@ -83,11 +79,11 @@ function get_number_of_subfiles(filebase) result(nfiles)
    inquire(file=trim(filename(0,filebase,multi=.false.)),exist=single_file_exists)
    inquire(file=trim(filename(0,filebase,multi=.true.)),exist=multiple_file_exists)
    if ((.not.single_file_exists).and.(.not.multiple_file_exists)) then
-      call out('Error: Could not find any files for the base')
+      call out('ERROR: Could not find any files for the base')
       call out(trim(filebase))
       stop
    else if (single_file_exists.and.multiple_file_exists) then
-      call out('Error: Ambiguous, since single and multiple files exist for the base')
+      call out('ERROR: Ambiguous, since single and multiple files exist for the base')
       call out(trim(filebase))
       stop
    else if (single_file_exists) then
@@ -101,7 +97,7 @@ function get_number_of_subfiles(filebase) result(nfiles)
          i = i+1
       end do
       if (i==1) then
-         call out('Error: There is only one sub-file in the base')
+         call out('ERROR: There is only one sub-file in the base')
          call out(trim(filebase))
          stop
       end if
@@ -180,23 +176,16 @@ subroutine load_parameters(forced_snapshot)
             case ('ext_halolist')
                if (iscurrent(12)) para%ext_halolist = trim(var_value)
             case default
-               call out('ERROR: '//trim(var_name)//' is an unknown parameter.')
-               stop
+               call error(trim(var_name)//' is an unknown parameter.')
          end select
       end if
    end do
    close(1)
    
-   if (.not.simulation_exists) then
-      call out('ERROR: specified simulation does not exist in parameter file.')
-      stop
-   end if
+   if (.not.simulation_exists) call error('specified simulation does not exist in parameter file.')
    
    do i = 1,size(parameter_written)
-      if (.not.parameter_written(i)) then
-         call out('ERROR: not all parameters specified in parameter file.')
-         stop
-      end if
+      if (.not.parameter_written(i)) call error('not all parameters specified in parameter file.')
    end do
    
    contains
@@ -204,10 +193,7 @@ subroutine load_parameters(forced_snapshot)
    logical function iscurrent(index)
       implicit none
       integer*4,intent(in) :: index
-      if (trim(current)=='') then
-         call out('ERROR: parameter file must start with "simulation" or "default" statement')
-         stop
-      end if
+      if (trim(current)=='') call error('parameter file must start with "simulation" or "default" statement')
       if (trim(current)==trim(para%simulation)) then
          parameter_written(index) = .true.
          iscurrent = .true.
@@ -276,7 +262,7 @@ subroutine load_particles_sorted_format(index)
       
    else
       
-      call out('Error: Empty file '//trim(fn))
+      call error('Empty file '//trim(fn))
       deallocate(p)
       
    end if
