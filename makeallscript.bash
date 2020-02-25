@@ -1,0 +1,2 @@
+#!/bin/bash
+srun /home/dobreschkow/SurfSuite/surfsuite makeall -simulation L210_N1024-Hydro6D-hyades -parameterfile /home/dobreschkow/surfsuite/parameters.txt -logfile /home/dobreschkow/surfsuite/logfile.txt
