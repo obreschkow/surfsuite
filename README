@@ -17,6 +17,7 @@ v0.12 21/02/2019: updated parameter files
 v0.13 23/02/2019: various fixes and clean ups
 v0.14 24/02/2019: more graphical parameters for showhalo, updated documentation
 v0.15 24/02/2019: added some file existence checks
+v0.16 25/02/2019: minor fixes
 
 Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
 
@@ -90,6 +91,7 @@ The tasks to choose from are
 + gethalo #haloID: returns basic properties of the specified halo. Optional arguments:
   -outputfile: name of a file in which the particles of this halo are saved; if specified the screen output is suppressed
   -outputformat (default 1): only used if -outputfile given. 1 = hdf5, 2 = ascii, 3 = binary
+  -subhalos (default 0): 0 = do not show particles in subhalos, 1 = included particles in all generations of subhalos
   -center (default 0): only used if -outputfile given. If set to 1, particle positions and velocities are
    centered to the geometric center (=centre of mass if all species have identical masses)
    
