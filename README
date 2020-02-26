@@ -16,9 +16,8 @@ v0.11 11/02/2019: improved description, cluster optimizations
 v0.12 21/02/2019: updated parameter files
 v0.13 23/02/2019: various fixes and clean ups
 v0.14 24/02/2019: more graphical parameters for showhalo, updated documentation
-v0.15 24/02/2019: added some file existence checks
-v0.16 25/02/2019: minor fixes
-v0.x 26/02/2019: added a lot of checks
+v0.15 25/02/2019: added some file existence checks
+v0.16 26/02/2019: minor fixes, added a lot of checks
 
 Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
 
@@ -113,7 +112,8 @@ Optional arguments used by all routines
 
 -parameterfile (default parameters.txt): path+filename of parameter-file
 
--simulation (default set in parameter-file): specify the simulation name in the parameterfile
+-simulation (default set in parameter-file): specify the simulation name in the parameterfile. This name is used to
+ specifies the actual N-body simulation, as well as the velociraptor run and the computing system.
 
 -snapshot (default set in parameter-file): overwrites the 'snapshot' string given in parameters.txt to allow
  a quick access to a different snapshot, keeping all the other parameters identical

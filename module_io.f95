@@ -118,7 +118,7 @@ subroutine load_parameters(forced_snapshot)
    logical                    :: parameter_written(12)
    integer*4                  :: i
    logical                    :: simulation_exists
-   integer*4                  :: access
+   integer*4                  :: status
    
    call check_exists(para%parameterfile)
    
@@ -187,11 +187,8 @@ subroutine load_parameters(forced_snapshot)
    if (.not.exists(para%path_gadget,.false.)) then
       call out('ERROR: Could not find directory specified by path_gadget:')
       call out(trim(para%path_gadget))
-      stop
-   end if
-   if (access(para%path_analysis,'rw').ne.0) then
-      call out('ERROR: You do not have read/write permissions to the path specified by path_analysis:')
-      call out(trim(para%path_analysis))
+      call out('Consider specifying a different simulation using "-simulation" or')
+      call out('changing the paths in the parameter file.')
       stop
    end if
    
@@ -200,8 +197,18 @@ subroutine load_parameters(forced_snapshot)
    if (para%N<=0) call error('L must be a positive real.')
    
    ! make paths, if not already existing
-   call system('mkdir -p '//trim(para%path_surfsuite))
-   call system('mkdir -p '//trim(para%path_analysis))
+   status = system('mkdir -p '//trim(para%path_surfsuite))
+   if (status.ne.0) then
+      call out('ERROR: You do not have read/write permissions to the path specified by path_surfsuite:')
+      call out(trim(para%path_surfsuite))
+      stop
+   end if
+   status = system('mkdir -p '//trim(para%path_analysis))
+   if (status.ne.0) then
+      call out('ERROR: You do not have read/write permissions to the path specified by path_analysis:')
+      call out(trim(para%path_analysis))
+      stop
+   end if
    
    contains
    

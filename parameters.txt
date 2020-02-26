@@ -4,7 +4,7 @@ N                 1024
 snapshot          snapshot_199
 path_gadget       /Users/do/Data/SURFS/L210_N1024-Hydro/gadget
 path_velociraptor /Users/do/Data/SURFS/L210_N1024-Hydro/velociraptor
-path_surfsuite    /Users/do/Data/SURFS/L210_N1024-Hydro/surfsuite
+path_surfsuite    /Users/do/Data/SURFS/L210_N1024-Hydro/test/2
 path_analysis     /Users/do/Data/SURFS/L210_N1024-Hydro/surfsuite/analysis_3d
 ext_groups        .VELOCIraptor.3dfof.catalog_groups
 ext_particles     .VELOCIraptor.3dfof.catalog_particles
