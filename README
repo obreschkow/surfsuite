@@ -18,6 +18,7 @@ v0.13 23/02/2019: various fixes and clean ups
 v0.14 24/02/2019: more graphical parameters for showhalo, updated documentation
 v0.15 24/02/2019: added some file existence checks
 v0.16 25/02/2019: minor fixes
+v0.x 26/02/2019: added a lot of checks
 
 Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
 
@@ -63,7 +64,8 @@ make system=hyades # compile code
 # extract halo information for halo number 56 in the L210_N1024 run of SURFS
 ./surfsuite gethalo 56 -simulation L210_N1024-Hydro6D-hyades
 
-# to run a larger job, use SLURM
+# to run a larger task, such as "sortparticles", "makehalos" and "makeall",
+# use the workload manager SLURM, see https://slurm.schedmd.com/pdfs/summary.pdf
 
 
 ARGUMENTS

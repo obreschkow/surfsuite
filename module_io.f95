@@ -118,6 +118,7 @@ subroutine load_parameters(forced_snapshot)
    logical                    :: parameter_written(12)
    integer*4                  :: i
    logical                    :: simulation_exists
+   integer*4                  :: access
    
    call check_exists(para%parameterfile)
    
@@ -156,15 +157,9 @@ subroutine load_parameters(forced_snapshot)
             case ('path_velociraptor')
                if (iscurrent(5)) para%path_velociraptor = trim(noslash(var_value))//'/'
             case ('path_surfsuite')
-               if (iscurrent(6)) then
-                  para%path_surfsuite = trim(noslash(var_value))//'/'
-                  call system('mkdir -p '//trim(para%path_surfsuite))
-               end if
+               if (iscurrent(6)) para%path_surfsuite = trim(noslash(var_value))//'/'
             case ('path_analysis')
-               if (iscurrent(7)) then
-                  para%path_analysis = trim(noslash(var_value))//'/'
-                  call system('mkdir -p '//trim(para%path_analysis))
-               end if
+               if (iscurrent(7)) para%path_analysis = trim(noslash(var_value))//'/'
             case ('ext_groups')
                if (iscurrent(8)) para%ext_groups = trim(var_value)
             case ('ext_particles')
@@ -182,11 +177,31 @@ subroutine load_parameters(forced_snapshot)
    end do
    close(1)
    
+   ! check parameter existence
    if (.not.simulation_exists) call error('specified simulation does not exist in parameter file.')
-   
    do i = 1,size(parameter_written)
       if (.not.parameter_written(i)) call error('not all parameters specified in parameter file.')
    end do
+   
+   ! check paths and files
+   if (.not.exists(para%path_gadget,.false.)) then
+      call out('ERROR: Could not find directory specified by path_gadget:')
+      call out(trim(para%path_gadget))
+      stop
+   end if
+   if (access(para%path_analysis,'rw').ne.0) then
+      call out('ERROR: You do not have read/write permissions to the path specified by path_analysis:')
+      call out(trim(para%path_analysis))
+      stop
+   end if
+   
+   ! check physical parameters
+   if (para%L<=0) call error('L must be a positive real.')
+   if (para%N<=0) call error('L must be a positive real.')
+   
+   ! make paths, if not already existing
+   call system('mkdir -p '//trim(para%path_surfsuite))
+   call system('mkdir -p '//trim(para%path_analysis))
    
    contains
    
