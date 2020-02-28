@@ -89,14 +89,8 @@ subroutine makehalolist
       allocate(npart(nhalos))
       npart(1:nhalos-1) = firstposition(2:nhalos)-firstposition(1:nhalos-1)
       npart(nhalos) = npart_file-firstposition(nhalos)
-      do j = 1,nhalos
-         if (npart(j)<0) then
-            write(*,*) j,firstposition(j+1),firstposition(j)
-            stop
-         end if
-      end do
       if (minval(npart)<0) then
-         call out('Error: something goes wrong in reading the VELOCIraptor group files,')
+         call out('Error: something went wrong in reading the VELOCIraptor group files,')
          call out('as there  are halos with a negative number of particles.')
          close(1)
          stop
@@ -212,8 +206,6 @@ subroutine makehalos
    call tic
    call out('INITIALIZE INPUT FILES')
    
-   !call initialize_sorted_snapshot no longer used
-    
    fnbase = trim(para%path_velociraptor)//trim(para%snapshot)//trim(para%ext_particles)
    
    call out('Number of VelociRaptor particle files:',nfiles_velociraptor*1_8)

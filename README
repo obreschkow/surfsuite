@@ -18,6 +18,7 @@ v0.13 23/02/2019: various fixes and clean ups
 v0.14 24/02/2019: more graphical parameters for showhalo, updated documentation
 v0.15 25/02/2019: added some file existence checks
 v0.16 26/02/2019: minor fixes, added a lot of checks
+v0.17 28/02/2019: improved documentation
 
 Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
 
@@ -41,7 +42,7 @@ QUICK START ON A GENERIC MACHINE
    > ./surfsuite getparticle 1
 9) Test extracting the information of a single group
    > ./surfsuite gethalo 1
-10) Test showing a halo
+10) Test displaying a halo
    > ./surfsuite showhalo 1
 
 
@@ -56,11 +57,12 @@ module load gfortran/6.3.0 hdf5/1.10.2 # load required modules
 make system=hyades # compile code
 ./surfsuite version # check version
 
-# extract particle information for particle number 134 in the L210_N1024 run of SURFS
-# note: it may be necessary to specify the parameter file location using the option "-parameterfile"
+# assuming that 'makeall' has been run before by another user, you can, for example,
+# extract particle information for particle number 134 in the SURFS run L210_N1024-Hydro:
 ./surfsuite getparticle 134 -simulation L210_N1024-Hydro6D-hyades
+# NB: it may be necessary to specify the parameter file location using the option "-parameterfile"
 
-# extract halo information for halo number 56 in the L210_N1024 run of SURFS
+# you can also extract halo information for halo number 56 in the L210_N1024 run of SURFS
 ./surfsuite gethalo 56 -simulation L210_N1024-Hydro6D-hyades
 
 # to run a larger task, such as "sortparticles", "makehalos" and "makeall",
@@ -83,7 +85,7 @@ The tasks to choose from are
 
 + makehalos: generates binary files, sequentially listing the particles of all halos with
   species-indices, 3D-positions and 3D-velocities (see file formats below)
-  This uses the halo information from VELOCIraptor
+  This uses the halo information from VELOCIraptor.
 
 + makeall: runs 'sortparticles' and 'makehalos'
 
@@ -113,7 +115,9 @@ Optional arguments used by all routines
 -parameterfile (default parameters.txt): path+filename of parameter-file
 
 -simulation (default set in parameter-file): specify the simulation name in the parameterfile. This name is used to
- specifies the actual N-body simulation, as well as the velociraptor run and the computing system.
+ specify the actual Gadget N-body simulation, as well as the VELOCIraptor run and the computing system.
+ If the -simulation option is specified, the parameters listed under this particular simulation will be loaded.
+ Otherwise the parameters under the first-listed "simulation" tag and the "default" tag (in this order) will be adopted.
 
 -snapshot (default set in parameter-file): overwrites the 'snapshot' string given in parameters.txt to allow
  a quick access to a different snapshot, keeping all the other parameters identical
@@ -122,10 +126,15 @@ Optional arguments used by all routines
  if the code is executed using a queueing system
 
 
-FILE FORMATS
+INPUT FILE FORMATS
 ====================================================================================================================
 
-Gadget-2 snapshots must be stored in one or multiple binary files "snapshot_###[.#]". Their format is the standard
+Gadget-2 snapshots
+------------------
+Gadget-2 snapshots must be stored in one or multiple binary files, named
+[path_gadget]/[snapshot] OR
+[path_gadget]/[snapshot].0, [path_gadget]/[snapshot].1, ...
+where bracketed names are specified in the parameter file. The snapshot format must be the standard
 sequential binary format of Gadget-2 (for n particles):
 - Header (256 bytes)
 - Positions (n * 3 * real*4)
@@ -133,16 +142,77 @@ sequential binary format of Gadget-2 (for n particles):
 - IDs (n * integer*4 or n * integer*8)
 - [additional properties, which will be ignored]
 
-Particle files produced by 'sortparticles', 'makehalos', 'gethalo' are as binary streams of exactly n*36 bytes
-- id(1),species(1),x(1),y(1),z(1),vx(1),vy(1),vz(1)
-...
-- id(n),species(n),x(n),y(n),z(n),vx(n),vy(n),vz(n)
-where id(i) is an 8-byte integer, species(i) is a 4-byte integer and the other 6 variables are 4-byte reals.
-The routine 'gethalo' can also write these files in ascii-format (-outputformat 2).
+VELOCIraptor files
+------------------
+When working with VELOCIraptor halos, VELOCIraptor group-files and particles files must be
+provided, for the Gadget-2 snapshots above:
 
-The halo list produced by 'makehalos' is a binary stream of exactly nhalos*16 bytes, made of four integer*4 values
-giving, for each halo: the file index, position of first_particle, number of particles, parent halo ID.
-A parent halo ID of -1 is used for 1st generation halos.
+The VELOCIraptor HDF5 groups must be stored in one or several files of name
+[path_velociraptor]/[snapshot][ext_groups] OR
+[path_velociraptor]/[snapshot][ext_groups].0, ...
+
+The VELOCIraptor HDF5 particles must be stored in one or several files of name
+[path_velociraptor]/[snapshot][ext_particles] OR
+[path_velociraptor]/[snapshot][ext_particles].0, ...
+
+
+OUTPUT FILE FORMATS
+====================================================================================================================
+
+Sorted Gadget particles
+-----------------------
+The task 'sortparticles' sorts the Gadget particles into new files, named
+# [path_surfsuite]/[snapshot][ext_sorted] OR
+# [path_surfsuite]/[snapshot][ext_sorted].0, ...
+where bracketed names are specified in the parameter file. These files are binary streams, that
+sequentially list the simulation particles, ordered by their Gadget-ID, in the format
+- id(1),species(1),x(1),y(1),z(1),vx(1),vy(1),vz(1)
+- id(2),species(2),x(2),y(2),z(2),vx(2),vy(2),vz(2)
+...
+where id(i) is an 8-byte integer, species(i) is a 4-byte integer and the other 6 variables are 4-byte reals.
+Thus each particle takes exactly 36 bytes. Each file contains up to 10^8 particles, such that the file sizes
+are limited to about 3.6GB. Whether one or several files are used depends on the number of particles.
+NB: The maximum number of particles per file can be changed programmatically, via a the global parameter
+nparticles_per_sorted_file in the module 'module_global.f95'.
+
+This sorting is just by Gadget particle id. It has nothing to do with VELOCIraptor and can be run without
+available VELOCIraptor data.
+
+Once the particles have been sorted with 'sortparticles', the task 'getparticle' can be used to
+retrieve the particle information.
+
+Particles sorted into haloes
+----------------------------
+If VELOCIraptor files (see above) are available, the task 'makehalos' can be used to sort the Gadget particles
+sequentially halo-after-halo into one or several files, named
+[path_surfsuite]/[snapshot][ext_halos] OR
+[path_surfsuite]/[snapshot][ext_halos].0, ...
+The number of such files is identical to the number of VELOCIraptor group files. Each new file is a binary
+stream that sequentially lists particles in the format
+- id(1),species(1),x(1),y(1),z(1),vx(1),vy(1),vz(1)
+- id(2),species(2),x(2),y(2),z(2),vx(2),vy(2),vz(2)
+...
+with identical variable types to those above.
+
+Simultaneously, the task 'makehalos' also generates a single master file, named
+[path_surfsuite]/[snapshot][ext_halolist]
+with pointers to the individual halos in the files [path_surfsuite]/[snapshot][ext_halos].
+This file is a binary stream of the format
+- idfile(1), position(1), npart(1), parentid(1)
+- idfile(2), position(2), npart(2), parentid(2)
+...
+which, for each halo gives the file index, position of first_particle in the file, number of
+particles, parent halo ID. A parent halo ID of -1 is used for 1st generation halos. All four variables
+are 4-byte integer, thus the full stream has exactly nhalos*16 bytes.
+
+Once the particles have been sorted into haloes with 'makehalos', the tasks 'gethalo' and 
+'showhalo' can be used.
+
+Auxiliary analysis path
+-----------------------
+surfsuite automatically generates the empty directory [path_analysis], specified in the parameter file. This empty
+directory is meant to serve for post-processing purposes by other code that can also access this parameter file,
+such as the tool 'surfanalysis' (not public).
 
 
 PACKAGED FILES
@@ -151,5 +221,5 @@ PACKAGED FILES
 + 'README' = this file
 + 'surfsuite.f95' main program
 + 'module_xxx.f95' various modules with subroutines
-+ 'parameters.txt' example parameter file
++ 'parameters.txt' sets paths and file name extensions
 + 'makefile' contains the compiling instructions for the gfortran compiler.
