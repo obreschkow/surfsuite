@@ -8,7 +8,6 @@ private
 public   :: task_sortparticles
 public   :: task_getgadgetproperties
 
-character(*),parameter  :: module_sortparticles_use = '> surfsuite sortparticles'
 integer*4               :: nfiles_gadget_unsorted
 integer*4               :: nfiles_sorted_particles
 integer*8               :: nparticles_tot
@@ -119,7 +118,7 @@ subroutine split_particles_into_sort_files
    
    ! open all sorted files
    do ifile_sorted = 0,nfiles_sorted_particles-1
-      fn = filename(ifile_sorted,para%path_surfsuite,para%snapshot,para%ext_sorted,multi=nfiles_sorted_particles>1)
+      fn = filename(ifile_sorted,para%path_surfsuite,snfile(para%snapshot),para%ext_sorted,multi=nfiles_sorted_particles>1)
       open(ifile_sorted+1000,file=trim(fn),action='write',form='unformatted',access='stream',status='replace')
    end do
    
@@ -128,7 +127,7 @@ subroutine split_particles_into_sort_files
    do ifile_gadget = 0,nfiles_gadget_unsorted-1
    
       ! load file
-      fn = filename(ifile_gadget,para%path_gadget,para%snapshot)
+      fn = filename(ifile_gadget,para%path_gadget,snfile(para%snapshot))
       
       call tic
       call out('SPLIT GADGET FILE INTO SORTABLE FILES')
@@ -256,16 +255,16 @@ subroutine determine_gadget_snapshot_properties
    
    call out('Simulation: '//trim(para%simulation))
    
-   call out('Snapshot: '//trim(para%snapshot))
+   call out('Snapshot: ',int(para%snapshot,8))
    
-   nfiles_gadget_unsorted = get_number_of_subfiles(trim(para%path_gadget)//trim(para%snapshot))
+   nfiles_gadget_unsorted = get_number_of_subfiles(trim(para%path_gadget)//trim(snfile(para%snapshot)))
    call out('Number of Gadget files for this snapshot:',nfiles_gadget_unsorted*1_8)
    
    ! compute number of particles & check file sizes
    nparticles_tot = 0
    np_tot = 0
    do i = 0,nfiles_gadget_unsorted-1
-      fn = filename(i,para%path_gadget,para%snapshot)
+      fn = filename(i,para%path_gadget,snfile(para%snapshot))
       inquire(file=trim(fn),exist=file_exists)
       if (.not.file_exists) then
          call out('Error: File does not exist '//trim(fn))

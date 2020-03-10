@@ -11,7 +11,7 @@ module module_gethalo
    public   :: task_gethalo
    public   :: nhalos
    public   :: load_halo_properties ! only load structure "halo"
-   public   :: load_halo            ! load structure "halo" as well as particles
+   public   :: load_halo_particles  ! load particle data of a halo
 
 contains
 
@@ -44,30 +44,22 @@ subroutine task_gethalo
       case ('-outputformat')
          call using_option(i)
          read(option_value(i),*) outputformat
-         if ((outputformat<1).or.(outputformat>3)) then
-            call out('Error: outputformat must be 1, 2 or 3.')
-            stop
-         end if
+         if ((outputformat<1).or.(outputformat>3)) call error('outputformat must be 1, 2 or 3.')
       case ('-subhalos')
          call using_option(i)
          read(option_value(i),*) subhalos
-         if ((subhalos<0).or.(subhalos>1)) then
-            call out('Error: subhalos must be 0 or 1.')
-            stop
-         end if
+         if ((subhalos<0).or.(subhalos>1)) call error('subhalos must be 0 or 1.')
       case ('-center')
          call using_option(i)
          read(option_value(i),*) center
-         if ((center<0).or.(center>1)) then
-            call out('Error: center must be 0 or 1.')
-            stop
-         end if
+         if ((center<0).or.(center>1)) call error('center must be 0 or 1.')
       end select
    end do
    call require_no_options_left
    
    ! load halo
-   call load_halo(haloid,subhalos==1,halo)
+   call load_halo_properties(haloid,halo)
+   call load_halo_particles(haloid,subhalos==1)
    if (center==1) call center_particles
    
    ! write/save halo
@@ -89,7 +81,7 @@ integer*4 function nhalos()
    integer*8            :: filesize
    logical              :: file_exists
     
-   fn = trim(para%path_surfsuite)//trim(para%snapshot)//trim(para%ext_halolist)
+   fn = trim(para%path_surfsuite)//trim(snfile(para%snapshot))//trim(para%ext_halolist)
    inquire(file=trim(fn),exist=file_exists)
    if (.not.file_exists) then
       call out('Error: Could not find file')
@@ -101,15 +93,13 @@ integer*4 function nhalos()
 
 end function nhalos
 
-subroutine load_halo(haloid,include_subhalos,halo)
+subroutine load_halo_particles(haloid,include_subhalos)
 
    implicit none
    integer*4,intent(in)          :: haloid
    logical,intent(in)            :: include_subhalos
-   type(type_halo),intent(out)   :: halo
-
+   
    call load_particles(haloid,include_subhalos)
-   call load_halo_properties(haloid,halo)
    
    contains
 
@@ -141,7 +131,7 @@ subroutine load_halo(haloid,include_subhalos,halo)
          ! note: there are some halos that have 0 particles, but children with particles
          ! it's a weird feature of the velociraptor outputs
          position = bytes_per_particle*halo%offset+1
-         fn = filename(halo%file,para%path_surfsuite,para%snapshot,para%ext_halos)
+         fn = filename(halo%file,para%path_surfsuite,snfile(para%snapshot),para%ext_halos)
          open(1,file=trim(fn),action='read',form='unformatted',status='old',access='stream')
          read(1,pos=position) p(nparticles+1)
          do i = 2,halo%npart
@@ -164,7 +154,7 @@ subroutine load_halo(haloid,include_subhalos,halo)
    
    end subroutine load_particles
 
-end subroutine load_halo
+end subroutine load_halo_particles
 
 subroutine load_halo_properties(haloid,halo)
 
@@ -182,7 +172,7 @@ subroutine load_halo_properties(haloid,halo)
       stop
    end if
    
-   fn = trim(para%path_surfsuite)//trim(para%snapshot)//trim(para%ext_halolist)
+   fn = trim(para%path_surfsuite)//trim(snfile(para%snapshot))//trim(para%ext_halolist)
    position = int(bytes_per_halo,8)*int(haloid-1,8)+1_8
    open(1,file=trim(fn),action='read',form='unformatted',status='old',access='stream')
    read(1,pos=position) halo
@@ -222,11 +212,13 @@ subroutine save_halo(outputfile,outputformat,haloid,halo)
       call hdf5_write_data('simulation/name',trim(para%simulation),'simulation name')
       call hdf5_write_data('simulation/box_l',para%L,'[simulation units] box side length')
       call hdf5_write_data('simulation/box_n',para%N,'cubic root of particle number')
+      call hdf5_write_data('simulation/snapshot',para%snapshot,'snapshot index')
       
       ! Group "surfsuite"
       call hdf5_add_group('surfsuite')
-      call hdf5_write_data('surfsuite/version',trim(version),'simulation of surfsuite used to extract the halo')
-      call hdf5_write_data('surfsuite/reference','Danail Obreschkow; danail.obreschkow@icrar.org')
+      call hdf5_write_data('surfsuite/timestamp',timestamp(),'surfsuite timestamp')
+      call hdf5_write_data('surfsuite/version',trim(version),'version of surfsuite used to extract the halo')
+      call hdf5_write_data('surfsuite/developer','Danail Obreschkow; danail.obreschkow@icrar.org')
       
       ! Group "halo"
       call hdf5_add_group('halo')
@@ -269,6 +261,8 @@ subroutine write_halo_properties(haloid,halo)
    character(len=255)                     :: txt
    write(txt,'(A,A)')  'Simulation:    ',trim(para%simulation)
    call out(txt)
+   write(txt,'(A,I0)') 'Snapshot:      ',para%snapshot
+   call out(txt)
    write(txt,'(A,I0)') 'Halo:          ',haloid
    call out(txt)
    write(txt,'(A,I0)') 'File:          ',halo%file
@@ -295,6 +289,15 @@ subroutine write_halo_particle_stats
    character(len=12)    :: wrap
    real*4               :: h
    if (nparticles>0) then
+      
+      write(txt,'(A,I0,A,I0,A,I0,A)')     'ID range:      ', &
+      &minval(p%id),' to ',maxval(p%id),' (first: ',p(1)%id,')'
+      call out(txt)
+      write(txt,'(A,I0,A,I0,A,I0,A,I0,A,I0,A,I0,A,I0,A)') &
+      & '# particles:   ',nparticles,' (',count(p%species==1),',',count(p%species==2),',',count(p%species==3),',',&
+      & count(p%species==4),',',count(p%species==5),',',count(p%species==6),')'
+      call out(txt)
+      
       h = para%L/2
       if (maxval(p%x(1))-minval(p%x(1))>h) then
          wrap = '   (wrapped)'
@@ -317,13 +320,13 @@ subroutine write_halo_particle_stats
       end if
       write(txt,'(A,F0.4,A,F0.4,A)') 'z-range:       ',minval(p%x(3)),' to ',maxval(p%x(3)),wrap
       call out(txt)
-      write(txt,'(A,I0,A,I0,A,I0,A)')     'ID range:      ', &
-      &minval(p%id),' to ',maxval(p%id),' (first: ',p(1)%id,')'
+      write(txt,'(A,F0.4,A,F0.4,A)') 'vx-range:      ',minval(p%v(1)),' to ',maxval(p%v(1)),wrap
       call out(txt)
-      write(txt,'(A,I0,A,I0,A,I0,A,I0,A,I0,A,I0,A,I0,A)') &
-      & '# particles:   ',nparticles,' (',count(p%species==1),',',count(p%species==2),',',count(p%species==3),',',&
-      & count(p%species==4),',',count(p%species==5),',',count(p%species==6),')'
+      write(txt,'(A,F0.4,A,F0.4,A)') 'vy-range:      ',minval(p%v(2)),' to ',maxval(p%v(2)),wrap
       call out(txt)
+      write(txt,'(A,F0.4,A,F0.4,A)') 'vz-range:      ',minval(p%v(3)),' to ',maxval(p%v(3)),wrap
+      call out(txt)
+      
    end if
 end subroutine write_halo_particle_stats
    

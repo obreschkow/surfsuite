@@ -11,9 +11,7 @@ function exists(filename,do_not_stop) result(res)
    logical,intent(in),optional   :: do_not_stop
    logical                       :: res
    inquire(file=trim(filename), exist=res)
-   if ((.not.res).and.(.not.present(do_not_stop))) then
-      call error('File does not exist: '//trim(filename))
-   end if
+   if ((.not.res).and.(.not.present(do_not_stop))) call error('File does not exist: '//trim(filename))
 end function exists
 
 subroutine check_exists(filename)
@@ -21,6 +19,16 @@ subroutine check_exists(filename)
    character(*),intent(in) :: filename
    if (.not.exists(filename)) stop
 end subroutine check_exists
+
+function snfile(sn) result(fn)
+
+   implicit none
+   integer,intent(in)   :: sn ! snapshot number
+   character(len=255)   :: fn
+   
+   write(fn,'('//trim(para%snapshot_fmt)//')') trim(para%snapshot_prefix),sn
+
+end function snfile
 
 function filename(index,part1,part2,part3,multi) result(fn)
 
@@ -109,20 +117,20 @@ end function get_number_of_subfiles
 subroutine load_parameters(forced_snapshot)
 
    implicit none
-   character(255),intent(in)  :: forced_snapshot
+   integer*4,intent(in)       :: forced_snapshot
    character(255)             :: line
    character(50)              :: var_name
    character(205)             :: var_value
    character(255)             :: current
    integer                    :: io
-   logical                    :: parameter_written(12)
+   logical                    :: parameter_written(14)
    integer*4                  :: i
    logical                    :: simulation_exists
    integer*4                  :: status
    
    call check_exists(para%parameterfile)
    
-   if (trim(forced_snapshot).ne.'') para%snapshot = forced_snapshot
+   if (forced_snapshot>=0) para%snapshot = forced_snapshot
    
    parameter_written = .false.
    current = ''
@@ -147,7 +155,7 @@ subroutine load_parameters(forced_snapshot)
                end if
                current = trim(var_value)
             case ('snapshot')
-               if (iscurrent(1).and.(trim(forced_snapshot)=='')) para%snapshot = trim(var_value)
+               if (iscurrent(1).and.(forced_snapshot<0)) read(var_value,*) para%snapshot
             case ('L')
                if (iscurrent(2)) read(var_value,*) para%L
             case ('N')
@@ -170,6 +178,10 @@ subroutine load_parameters(forced_snapshot)
                if (iscurrent(11)) para%ext_halos = trim(var_value)
             case ('ext_halolist')
                if (iscurrent(12)) para%ext_halolist = trim(var_value)
+            case ('snapshot_fmt')
+               if (iscurrent(13)) para%snapshot_fmt = trim(var_value)
+            case ('snapshot_prefix')
+               if (iscurrent(14)) para%snapshot_prefix = trim(var_value)
             case default
                call error(trim(var_name)//' is an unknown parameter.')
          end select
@@ -243,7 +255,7 @@ subroutine save_particles_sorted_format(index)
    call tic
    
    ! write user info
-   fn = filename(index,para%path_surfsuite,para%snapshot,para%ext_sorted)
+   fn = filename(index,para%path_surfsuite,snfile(para%snapshot),para%ext_sorted)
    call out('SAVE FILE '//trim(fn))
    call out('Number of particles:',nparticles)
 
@@ -266,7 +278,7 @@ subroutine load_particles_sorted_format(index)
    call tic
 
    ! write user info
-   fn = filename(index,para%path_surfsuite,para%snapshot,para%ext_sorted)
+   fn = filename(index,para%path_surfsuite,snfile(para%snapshot),para%ext_sorted)
    call out('LOAD FILE '//trim(fn))
 
    ! determine number of particles from file size

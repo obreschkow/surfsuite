@@ -66,6 +66,7 @@ surfsuite.o:   module_taskhandler.o \
                module_makehalos.o \
                module_processhalo.o \
                module_gethalo.o \
+               module_trackhalo.o \
                module_showhalo.o
 surfsuite: 	   module_taskhandler.o \
                module_global.o \
@@ -77,6 +78,7 @@ surfsuite: 	   module_taskhandler.o \
                module_processhalo.o \
                module_makehalos.o \
                module_gethalo.o \
+               module_trackhalo.o \
                module_showhalo.o
 
 # ======================================================================

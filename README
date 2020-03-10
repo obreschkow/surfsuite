@@ -18,7 +18,7 @@ v0.13 23/02/2019: various fixes and clean ups
 v0.14 24/02/2019: more graphical parameters for showhalo, updated documentation
 v0.15 25/02/2019: added some file existence checks
 v0.16 26/02/2019: minor fixes, added a lot of checks
-v0.17 28/02/2019: improved documentation
+v0.17 03/03/2019: improved documentation, generalised snapshot filenames, added trackhalo
 
 Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
 
@@ -98,9 +98,11 @@ The tasks to choose from are
   -center (default 0): only used if -outputfile given. If set to 1, particle positions and velocities are
    centered to the geometric center (=centre of mass if all species have identical masses)
    
-+ showhalo #haloID: displays or saves a bitmap-image of the halo
++ showhalo #haloID: displays or saves a bitmap-image of the halo. Optional arguments:
   -outputfile: name of a file in which the image is saved as bitmap (choose *.bmp); if specified the screen output is suppressed
   -subhalos (default 0): 0 = do not show particles in subhalos, 1 = included particles in all generations of subhalos
+  -at (defaults to the snapshot index specified in the parameter file or via -snapshot): optional index, specifying the snapshot at
+   which the the particles of this halo are to be displayed, allows tracking particles backward and forward in time
   -mode (default 0): 0 = render particles as points, 1 = show particles as smoothed points, 2 = show small trajectories
   -npixels (default 800): number of pixels per dimension
   -sidelength (default 2): sidelength of the displayed images in simulation units
@@ -109,6 +111,17 @@ The tasks to choose from are
   -gamma (default 0.6): gamma correction value for non-linear brightness scale
   -projection (default 1): specifies the orthogonal projection, 1 = (x,y), 2 = (y,z), 3 = (z,x)
 
++ trackhalo: tracks the particles of a halo back in time and stores the positions and velocities in a hdf5 file.
+  This task requires the sorted Gadget files (produced by the tasks "sortparticles") to exist for all snapshots in the range specified
+  by the arguments "-from" and "-to"; and it requires the halo files (produced by the task "makehalos") to exist for the reference
+  snapshot, i.e. the snapshot specified via the parameter file or -snapshot.
+  Arguments:
+  -outputfile (required): name of a hdf5-file in which the evolving particles of this halo are saved
+  -from (required): index of first snapshot for tracking
+  -to (required): index of last snapshot for tracking
+  -subhalos (default 0): 0 = do not show particles in subhalos, 1 = included particles in all generations of subhalos
+  -center (default 1): if set to 1, particle positions and velocities are centered to the geometric center 
+   of the halo at the default snapshot (specified via the parameter file or -snapshot)
 
 Optional arguments used by all routines
 
@@ -119,8 +132,8 @@ Optional arguments used by all routines
  If the -simulation option is specified, the parameters listed under this particular simulation will be loaded.
  Otherwise the parameters under the first-listed "simulation" tag and the "default" tag (in this order) will be adopted.
 
--snapshot (default set in parameter-file): overwrites the 'snapshot' string given in parameters.txt to allow
- a quick access to a different snapshot, keeping all the other parameters identical
+-snapshot (default set in parameter-file): overwrites the 'snapshot' number given in parameters.txt to allow
+ a quick access to a different snapshot, keeping all the other parameters identical.
 
 -logfile (default none) allows the user to specify a path+filename for the screen-log, which is particularly usefull
  if the code is executed using a queueing system
@@ -134,7 +147,15 @@ Gadget-2 snapshots
 Gadget-2 snapshots must be stored in one or multiple binary files, named
 [path_gadget]/[snapshot] OR
 [path_gadget]/[snapshot].0, [path_gadget]/[snapshot].1, ...
-where bracketed names are specified in the parameter file. The snapshot format must be the standard
+where bracketed names are specified in the parameter file. In particular, [snapshot] is a character string
+specified by the three parameters "snapshot" (=snapsnot number), "snapsnhot_prefix" and "snapshot_fmt",
+where the latter specifies how "snapshot" and "snapshot_prefix" are combined according to Fortran IO rules. E.g.
+- snapshot          186
+- snapshot_ftm      (A,I0.4)
+- snapshot_prefix   sn_
+generates the filename "sn_0186"
+
+The snapshot format must be the standard
 sequential binary format of Gadget-2 (for n particles):
 - Header (256 bytes)
 - Positions (n * 3 * real*4)

@@ -1,11 +1,11 @@
 module module_global
 
-   character(*),parameter  :: version = '0.16'
+   character(*),parameter  :: version = '0.17'
 
    type type_para
       character(len=255)   :: parameterfile
       character(len=255)   :: simulation
-      character(len=255)   :: snapshot
+      integer*4            :: snapshot
       real*4               :: L ! box side length in simulation units
       integer*4            :: N ! number of particles on a side
       character(len=255)   :: path_gadget
@@ -17,6 +17,8 @@ module module_global
       character(len=255)   :: ext_sorted
       character(len=255)   :: ext_halos
       character(len=255)   :: ext_halolist
+      character(len=255)   :: snapshot_fmt
+      character(len=255)   :: snapshot_prefix
    end type type_para
 
    type(type_para)         :: para

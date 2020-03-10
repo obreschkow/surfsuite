@@ -8,16 +8,17 @@ program surfsuite
    use module_makehalos
    use module_gethalo
    use module_showhalo
+   use module_trackhalo
 
    implicit none
 
-   character(len=255)   :: forced_snapshot
-   integer*4            :: i,val
+   integer*4   :: forced_snapshot
+   integer*4   :: i
    
    ! Change default options
    para%parameterfile = 'parameters.txt'
    para%simulation = ''
-   forced_snapshot = ''
+   forced_snapshot = -1
    
    ! handle arguments
    call get_arguments
@@ -39,12 +40,7 @@ program surfsuite
          para%simulation = trim(option_value(i))
       case ('-snapshot')
          call using_option(i)
-         if (len(trim(option_value(i)))<=3) then
-            read(option_value(i),*) val
-            write(forced_snapshot,'(A,I0.3)') 'snapshot_',val
-         else
-            forced_snapshot = trim(option_value(i))
-         end if
+         read(option_value(i),*) forced_snapshot
       case ('-logfile')
          call using_option(i)
          logfile_name = trim(option_value(i))
@@ -94,6 +90,9 @@ program surfsuite
    case ('showhalo')
       call require_task_value(.true.)
       call task_showhalo
+   case ('trackhalo')
+      call require_task_value(.true.)
+      call task_trackhalo
    case default
       call error('"'//trim(task_name)//'" is an unknown task.')
    end select

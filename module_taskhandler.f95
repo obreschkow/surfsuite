@@ -1,7 +1,7 @@
 ! analyses the format
 ! ./program [task_name] [task_value] [-option_name option_value] [-option_name option_value] ...
 ! where parentheses are optional
-! and produces output on scree or logfile
+! and produces output on screen or logfile
 
 module module_taskhandler
 

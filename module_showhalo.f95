@@ -5,6 +5,7 @@ module module_showhalo
    use module_system
    use module_io
    use module_gethalo
+   use module_trackhalo
    use module_processhalo
 
    implicit none
@@ -35,14 +36,14 @@ subroutine task_showhalo
    integer*4                  :: i
    logical                    :: output
    character(len=255)         :: outputfile
-   integer*4                  :: subhalos
-   type(type_halo)            :: halo
+   integer*4                  :: subhalos,at
    
    read(task_value,*) haloid
    
    ! default options
    output = .false.
    subhalos = 0
+   at = para%snapshot
    graph%mode = 0
    graph%npixels = 800
    graph%sidelength = 2
@@ -62,6 +63,10 @@ subroutine task_showhalo
          call using_option(i)
          read(option_value(i),*) subhalos
          if ((subhalos<0).or.(subhalos>1)) call error('subhalos must be 0 or 1.')
+      case ('-at')
+         call using_option(i)
+         read(option_value(i),*) at
+         if (at<0) call error('"at" must be a snapshot index >=0.')
       case ('-mode')
          call using_option(i)
          read(option_value(i),*) graph%mode
@@ -95,7 +100,14 @@ subroutine task_showhalo
    call require_no_options_left
    if (graph%smoothinglength>=graph%sidelength) call error('smoothinglength must be smaller than sidelength')
    
-   call load_halo(haloid,subhalos==1,halo)
+   call load_halo_particles(haloid,subhalos==1)
+   
+   if (at==para%snapshot) then
+      call load_halo_particles(haloid,subhalos==1)
+   else
+      call load_halo_particles_at_different_snapshot(haloid,subhalos==1,at)
+   end if
+   
    call center_particles
    call raster_halo
    
@@ -108,6 +120,26 @@ subroutine task_showhalo
 
 end subroutine task_showhalo
 
+subroutine load_halo_particles_at_different_snapshot(haloid,include_subhalos,at)
+
+   ! this calls load_halo_evolving_particles for a single snapshot "at"
+
+   implicit none
+   integer*4,intent(in) :: haloid
+   logical,intent(in)   :: include_subhalos
+   integer*4,intent(in) :: at
+   integer*4            :: d
+   real*4,allocatable   :: x(:,:,:)
+   real*4,allocatable   :: v(:,:,:)
+
+   call load_halo_evolving_particles(haloid,include_subhalos,.false.,at,at,x,v)
+   do d = 1,3
+      p(:)%x(d) = x(:,d,at)
+      p(:)%v(d) = v(:,d,at)
+   end do
+
+end subroutine load_halo_particles_at_different_snapshot
+
 subroutine raster_halo
 
    implicit none
@@ -116,9 +148,9 @@ subroutine raster_halo
    integer*4                     :: nsmooth,npx
    integer*4                     :: kernelsteps = 50
    integer*4                     :: j,k,ix,iy,n
-   real*4                        :: q0,q,factor,x0,y0,dx,dy,dt,density
+   real*4                        :: q0,q,factor,x0,y0,dx,dy,dt,density,add
    real*8                        :: rrms,vrms
-   integer*8                     :: i
+   integer*8                     :: i,length
    
    ! make smoothing kernel
    nsmooth = int(graph%npixels*graph%smoothinglength/graph%sidelength*2)
@@ -201,27 +233,26 @@ subroutine raster_halo
       
    else if (graph%mode == 2) then
    
+      length = 0
       do i = 1,nparticles
          x0 = (x(i)/graph%sidelength+0.5)*graph%npixels
-         if ((x0>=1-nsmooth).and.(x0<=graph%npixels+nsmooth)) then
-            y0 = (y(i)/graph%sidelength+0.5)*graph%npixels
-            if ((y0>=1).and.(y0<=graph%npixels)) then
-               dx = vx(i)*dt/graph%sidelength*graph%npixels
-               if ((x0+dx>=1-nsmooth).and.(x0+dx<=graph%npixels+nsmooth)) then
-                  dy = vy(i)*dt/graph%sidelength*graph%npixels
-                  if ((y0+dy>=1).and.(y0+dy<=graph%npixels)) then
-                     n = nint(sqrt(dx**2+dy**2))+1
-                     do k = -n,n
-                        ix = nint(x0+real(k)/n/2*dx)
-                        iy = nint(y0+real(k)/n/2*dy)
-                        f(ix,iy,p(i)%species) = f(ix,iy,p(i)%species)+1
-                     end do
-                  end if
-               end if
+         y0 = (y(i)/graph%sidelength+0.5)*graph%npixels
+         dx = vx(i)*dt/graph%sidelength*graph%npixels
+         dy = vy(i)*dt/graph%sidelength*graph%npixels
+         n = nint(sqrt(dx**2+dy**2))+1
+         add = 1/real(n,4)
+         length = length+n
+         do k = -n,n
+            ix = nint(x0+real(k)/n/2*dx)
+            if ((ix>=1-nsmooth).and.(ix<=graph%npixels+nsmooth)) then
+               iy = nint(y0+real(k)/n/2*dy)
+               if ((iy>=1).and.(iy<=graph%npixels)) f(ix,iy,p(i)%species) = f(ix,iy,p(i)%species)+add
             end if
-         end if
+         end do
       end do
-      f = f/npx
+      f = f/npx*length/real(nparticles)
+      
+      write(*,*) sum(f(:,:,1)),sum(f(:,:,2)),count(p%species==1),count(p%species==2)
    
    end if
    

@@ -1,5 +1,6 @@
 module module_makehalos
 
+use module_taskhandler
 use module_global
 use module_system
 use module_io
@@ -20,16 +21,15 @@ subroutine task_makehalos
    character(len=255)      :: fnbase
    
    ! get numbers of files
-   fnbase = trim(para%path_surfsuite)//trim(para%snapshot)//trim(para%ext_sorted)
+   fnbase = trim(para%path_surfsuite)//trim(snfile(para%snapshot))//trim(para%ext_sorted)
    nfiles_sorted_particles = get_number_of_subfiles(trim(fnbase))
-   fnbase = trim(para%path_velociraptor)//trim(para%snapshot)//trim(para%ext_particles)
+   fnbase = trim(para%path_velociraptor)//trim(snfile(para%snapshot))//trim(para%ext_particles)
    nfiles_velociraptor = get_number_of_subfiles(trim(fnbase))
    
    ! basic file check
-   fnbase = trim(para%path_velociraptor)//trim(para%snapshot)//trim(para%ext_groups)
+   fnbase = trim(para%path_velociraptor)//trim(snfile(para%snapshot))//trim(para%ext_groups)
    if (nfiles_velociraptor.ne.get_number_of_subfiles(trim(fnbase))) then
-      call out('Error: unequal numbers of particle and group files.')
-      stop
+      call error('unequal numbers of VELOCIraptor particle files and group files.')
    end if
    
    call tic_total
@@ -55,10 +55,10 @@ subroutine makehalolist
    
    call out('Number of VELOCIraptor group files:',nfiles_velociraptor*1_8)
    
-   fnbase  = trim(para%path_velociraptor)//trim(para%snapshot)//trim(para%ext_groups)
-   fnbase2 = trim(para%path_velociraptor)//trim(para%snapshot)//trim(para%ext_particles)
+   fnbase  = trim(para%path_velociraptor)//trim(snfile(para%snapshot))//trim(para%ext_groups)
+   fnbase2 = trim(para%path_velociraptor)//trim(snfile(para%snapshot))//trim(para%ext_particles)
    
-   open(1,file=trim(para%path_surfsuite)//trim(para%snapshot)//trim(para%ext_halolist),&
+   open(1,file=trim(para%path_surfsuite)//trim(snfile(para%snapshot))//trim(para%ext_halolist),&
    &action='write',form='unformatted',status='replace',access='stream')
    
    nhalos_tot = 0
@@ -70,10 +70,7 @@ subroutine makehalolist
       fn = filename(i,fnbase2)
       call hdf5_open(trim(fn))
       call hdf5_read_data('Num_of_particles_in_groups',npart_file,.true.)
-      if (npart_file==huge(npart_file)) then
-         call out('Error in makehalolist: number of particles in file too large.')
-         stop
-      end if
+      if (npart_file==huge(npart_file)) call error('hdf5 problem; number of particles in file too large.')
       
       ! read velociraptor group catalog
       fn = filename(i,fnbase)
@@ -90,7 +87,7 @@ subroutine makehalolist
       npart(1:nhalos-1) = firstposition(2:nhalos)-firstposition(1:nhalos-1)
       npart(nhalos) = npart_file-firstposition(nhalos)
       if (minval(npart)<0) then
-         call out('Error: something went wrong in reading the VELOCIraptor group files,')
+         call out('ERROR: something went wrong in reading the VELOCIraptor group files,')
          call out('as there  are halos with a negative number of particles.')
          close(1)
          stop
@@ -137,7 +134,7 @@ subroutine makehalolist
       
       ! load halo list
       allocate(halo(nhalos_tot))
-      open(1,file=trim(para%path_surfsuite)//trim(para%snapshot)//trim(para%ext_halolist),&
+      open(1,file=trim(para%path_surfsuite)//trim(snfile(para%snapshot))//trim(para%ext_halolist),&
       &action='read',form='unformatted',access='stream')
       do i = 1,nhalos_tot
          halo(i)%nchildren = 0
@@ -174,13 +171,10 @@ subroutine makehalolist
       do i = 1,nhalos_tot
          if (halo(i)%parentid==-1) ncheck = ncheck+halo(i)%npart+halo(i)%npartsub
       end do
-      if (sum(int(halo%npart,8)).ne.ncheck) then
-         call out('Error: subhalo count error')
-         stop
-      end if
+      if (sum(int(halo%npart,8)).ne.ncheck) call error('subhalo count wrong')
       
       ! save halo list
-      open(1,file=trim(para%path_surfsuite)//trim(para%snapshot)//trim(para%ext_halolist),&
+      open(1,file=trim(para%path_surfsuite)//trim(snfile(para%snapshot))//trim(para%ext_halolist),&
       &action='write',form='unformatted',status='replace',access='stream')
       do i = 1,nhalos_tot
          write(1) halo(i)
@@ -206,7 +200,7 @@ subroutine makehalos
    call tic
    call out('INITIALIZE INPUT FILES')
    
-   fnbase = trim(para%path_velociraptor)//trim(para%snapshot)//trim(para%ext_particles)
+   fnbase = trim(para%path_velociraptor)//trim(snfile(para%snapshot))//trim(para%ext_particles)
    
    call out('Number of VelociRaptor particle files:',nfiles_velociraptor*1_8)
    
@@ -214,7 +208,7 @@ subroutine makehalos
    ifileold = -1
    positionold = -1
    do ifile = 0,nfiles_sorted_particles-1
-      fn = trim(filename(ifile,para%path_surfsuite,para%snapshot,para%ext_sorted))
+      fn = trim(filename(ifile,para%path_surfsuite,snfile(para%snapshot),para%ext_sorted))
       if (exists(trim(fn))) then
          open(ifile+1000,file=trim(fn), &
          & action='read',form='unformatted',status='old',access='stream')
@@ -233,17 +227,14 @@ subroutine makehalos
       call out('Load file '//trim(fn))
       call hdf5_open(trim(fn))
       call hdf5_read_data('Num_of_particles_in_groups',npart_file,.true.)
-      if (npart_file==huge(npart_file)) then
-         call out('Error in makehalolist: number of particles in file too large.')
-         stop
-      end if
+      if (npart_file==huge(npart_file)) call error('number of particles in file too large.')
       allocate(array(npart_file))
       call hdf5_read_data('Particle_IDs',array)
       call hdf5_close()
       
       n = n+npart_file
       
-      fn = filename(i,para%path_surfsuite,para%snapshot,para%ext_halos,multi=nfiles_velociraptor>1)
+      fn = filename(i,para%path_surfsuite,snfile(para%snapshot),para%ext_halos,multi=nfiles_velociraptor>1)
       call out('Write file '//trim(fn))
       open(1,file=trim(fn),action='write',form='unformatted',status='replace',access='stream')
       do j = 1,size(array)
@@ -257,7 +248,7 @@ subroutine makehalos
          ifileold = ifileold
          positionold = position
          if (particle%id.ne.array(j)) then
-            call out('Error: something goes wrong in reading sorted particles based on')
+            call out('ERROR: something goes wrong in reading sorted particles based on')
             call out('the VELOCIraptor particle files.')
             stop
          end if

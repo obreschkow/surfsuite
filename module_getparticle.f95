@@ -57,27 +57,18 @@ subroutine get_particle(id,particle,ifile)
    integer*8                        :: file_size
    character(255)                   :: fn
    
-   if (id<1) then
-      call out('Error: Particle ID below allowed range.')
-      stop
-   end if
+   if (id<1) call error('Particle ID below allowed range.')
    
    ifile = int((id-1)/nparticles_per_sorted_file,4)
    position = (id-ifile*nparticles_per_sorted_file-1)*bytes_per_particle+1_8
    
-   fn = trim(filename(ifile,para%path_surfsuite,para%snapshot,para%ext_sorted))
+   fn = trim(filename(ifile,para%path_surfsuite,snfile(para%snapshot),para%ext_sorted))
    
-   if (.not.exists(trim(fn),.true.)) then
-      call out('Error: Particle ID above allowed range or file lost.')
-      stop
-   end if
+   if (.not.exists(trim(fn),.true.)) call error('Particle ID outside allowed range or file lost.')
    
    inquire(file=trim(fn), size=file_size)
    
-   if (position>file_size) then
-      call out('Error: Particle ID above allowed range.')
-      stop
-   end if
+   if (position>file_size) call error('Particle ID outside allowed range.')
    
    open(1,file=trim(fn), &
    & action='read',form='unformatted',status='old',access='stream')

@@ -42,6 +42,14 @@ subroutine toc_total
    call hline
 end subroutine toc_total
 
+function timestamp() result(str)
+   implicit none
+   integer*4         :: t(8)
+   character(len=23) :: str
+   call date_and_time(VALUES=t)
+   write(str,'(I0,A,I0.2,A,I0.2,A,I0.2,A,I0.2,A,I0.2,A,I0.3)') t(1),'/',t(2),'/',t(3),'-',t(5),':',t(6),':',t(7),'.',t(8)
+end function timestamp
+
 function time_string(secs) result(str)
    implicit none
    real*8,intent(in)          :: secs
