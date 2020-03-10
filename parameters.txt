@@ -87,8 +87,8 @@ path_surfsuite    /mnt/su3ctm/dobreschkow/SURFS/L210_N1024-Hydro
 path_analysis     /mnt/su3ctm/dobreschkow/SURFS/L210_N1024-Hydro/analysis_6d
 ext_groups        .VELOCIraptor.6dfofsubs.catalog_groups
 ext_particles     .VELOCIraptor.6dfofsubs.catalog_particles
-ext_halos         .6dfof.halos
-ext_halolist      .6dfof.halolist
+ext_halos         .6dfofsubs.halos
+ext_halolist      .6dfofsubs.halolist
 
 default
 ext_sorted        .sorted
