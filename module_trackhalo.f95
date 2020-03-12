@@ -109,6 +109,13 @@ subroutine task_trackhalo
          sub = 1
       end if
       call hdf5_write_data('halo/includes_subhalos',sub,'logical flag (0/1 = subhalo particles are included/excluded)')
+       
+      ! Group "tracking"
+      call hdf5_add_group('tracking')
+      call hdf5_write_data('tracking/snapshot_min',snapshot_min,'minimal snapshot index of track')
+      call hdf5_write_data('tracking/snapshot_max',snapshot_max,'maximal snapshot index of track')
+      call hdf5_write_data('tracking/center',center, & 
+      & 'logical flag specifying if positions and velocities are centered to main snapshot (0=false, 1=true)')
    
       ! Group "particles"
       call hdf5_add_group('particles')
@@ -147,14 +154,13 @@ subroutine load_halo_evolving_particles(haloid,include_subhalos,center,snapshot_
    type(type_particle)              :: particle
    integer*4,allocatable            :: ifile(:)
    integer*8,allocatable            :: position(:),list(:,:)
-   real*4                           :: shiftx(3),shiftv(3)
+   real*4                           :: x0(3)
 
    call load_halo_particles(haloid,include_subhalos)
    if (center) then
-      call center_particles(shiftx,shiftv)
+      call center_particles(x0)
    else
-      shiftx = 0
-      shiftv = 0
+      x0 = 0
    end if
 
    n = size(p)
@@ -197,8 +203,8 @@ subroutine load_halo_evolving_particles(haloid,include_subhalos,center,snapshot_
          end if
       
          read(1,pos=position(j)) particle
-         x(i,:,sn) = particle%x+shiftx
-         v(i,:,sn) = particle%v+shiftv
+         x(i,:,sn) = mod(particle%x-x0,para%L)
+         v(i,:,sn) = particle%v
          
       end do
    
