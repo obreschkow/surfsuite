@@ -64,12 +64,12 @@ subroutine task_trackhalo
    if (snapshot_max<0) call error('arguemnt -to must best specified.')
    if (snapshot_min>snapshot_max) call error('snapshot index "from" must be lower or equal than snapshot index "to".')
    
-   call hline
-   call tic()
+   call tic_total
+   call out('TRACK EVOLUTION OF HALO',1_8*haloid)
    call load_halo_properties(haloid,halo)
    call load_halo_evolving_particles(haloid,subhalos==1,center==1,snapshot_min,snapshot_max,x,v)
    call save_evolving_particles
-   call toc()
+   call toc_total
    
    contains
     
