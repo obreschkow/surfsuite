@@ -20,6 +20,7 @@ v0.15 25/02/2019: added some file existence checks
 v0.16 26/02/2019: minor fixes, added a lot of checks
 v0.17 03/03/2019: improved documentation, generalised snapshot filenames, added trackhalo
 v0.18 12/03/2019: improved halo tracking, -center changed to positions only
+v0.19 13/03/2019: added slum example scripts, fixed bug with species in halo tracking
 
 Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
 

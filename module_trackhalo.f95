@@ -20,16 +20,16 @@ subroutine task_trackhalo
 
    implicit none
    
-   integer*4            :: i
-   integer*4            :: haloid
-   integer*4            :: subhalos = 0
-   integer*4            :: center = 1
-   integer*4            :: snapshot_max = -1
-   integer*4            :: snapshot_min = -1
-   character(len=255)   :: outputfile = ''
-   real*4,allocatable   :: x(:,:,:)
-   real*4,allocatable   :: v(:,:,:)
-   type(type_halo)      :: halo
+   integer*4               :: i
+   integer*4               :: haloid
+   integer*4               :: subhalos = 0
+   integer*4               :: center = 1
+   integer*4               :: snapshot_max = -1
+   integer*4               :: snapshot_min = -1
+   character(len=255)      :: outputfile = ''
+   real*4,allocatable      :: x(:,:,:)
+   real*4,allocatable      :: v(:,:,:)
+   type(type_halo)         :: halo
    
    read(task_value,*) haloid
    
@@ -141,20 +141,20 @@ end subroutine task_trackhalo
 subroutine load_halo_evolving_particles(haloid,include_subhalos,center,snapshot_min,snapshot_max,x,v)
 
    implicit none
-   integer*4,intent(in)             :: haloid
-   logical,intent(in)               :: include_subhalos
-   logical,intent(in)               :: center
-   integer*4,intent(in)             :: snapshot_min,snapshot_max ! snapshot range
-   real*4,allocatable,intent(out)   :: x(:,:,:)
-   real*4,allocatable,intent(out)   :: v(:,:,:)
-   integer*4                        :: n,i
-   integer*4                        :: ifileold,sn
-   integer*8                        :: id,j
-   character(255)                   :: fn
-   type(type_particle)              :: particle
-   integer*4,allocatable            :: ifile(:)
-   integer*8,allocatable            :: position(:),list(:,:)
-   real*4                           :: x0(3)
+   integer*4,intent(in)                :: haloid
+   logical,intent(in)                  :: include_subhalos
+   logical,intent(in)                  :: center
+   integer*4,intent(in)                :: snapshot_min,snapshot_max ! snapshot range
+   real*4,allocatable,intent(out)      :: x(:,:,:)
+   real*4,allocatable,intent(out)      :: v(:,:,:)
+   integer*4                           :: n,i
+   integer*4                           :: ifileold,sn
+   integer*8                           :: id,j
+   character(255)                      :: fn
+   type(type_particle)                 :: particle
+   integer*4,allocatable               :: ifile(:)
+   integer*8,allocatable               :: position(:),list(:,:)
+   real*4                              :: x0(3)
 
    call load_halo_particles(haloid,include_subhalos)
    if (center) then
@@ -203,15 +203,15 @@ subroutine load_halo_evolving_particles(haloid,include_subhalos,center,snapshot_
          end if
       
          read(1,pos=position(j)) particle
-         x(i,:,sn) = mod(particle%x-x0,para%L)
-         v(i,:,sn) = particle%v
+         x(j,:,sn) = mod(particle%x-x0,para%L)
+         v(j,:,sn) = particle%v
          
       end do
    
       close(1)
 
    end do
-
+   
    contains
 
    recursive subroutine merge_sort_list(list,level)

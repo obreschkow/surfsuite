@@ -1,6 +1,6 @@
 module module_global
 
-   character(*),parameter  :: version = '0.18'
+   character(*),parameter  :: version = '0.19'
 
    type type_para
       character(len=255)   :: parameterfile
