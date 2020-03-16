@@ -65,6 +65,7 @@ ext_groups        .VELOCIraptor.3dfof.catalog_groups
 ext_particles     .VELOCIraptor.3dfof.catalog_particles
 ext_halos         .3dfof.halos
 ext_halolist      .3dfof.halolist
+file_scalefactors /mnt/su3ctm/dobreschkow/SURFS/scalefactors200.txt
 
 simulation        L210_N1024-Hydro6D-hyades
 L                 210
@@ -77,6 +78,7 @@ ext_groups        .VELOCIraptor.6dfof.catalog_groups
 ext_particles     .VELOCIraptor.6dfof.catalog_particles
 ext_halos         .6dfof.halos
 ext_halolist      .6dfof.halolist
+file_scalefactors /mnt/su3ctm/dobreschkow/SURFS/scalefactors200.txt
 
 simulation        L210_N1024-Hydro6Dsubs-hyades
 L                 210
@@ -89,6 +91,7 @@ ext_groups        .VELOCIraptor.6dfofsubs.catalog_groups
 ext_particles     .VELOCIraptor.6dfofsubs.catalog_particles
 ext_halos         .6dfofsubs.halos
 ext_halolist      .6dfofsubs.halolist
+file_scalefactors /mnt/su3ctm/dobreschkow/SURFS/scalefactors200.txt
 
 default
 ext_sorted        .sorted
