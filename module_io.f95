@@ -123,7 +123,7 @@ subroutine load_parameters(forced_snapshot)
    character(205)             :: var_value
    character(255)             :: current
    integer                    :: io
-   logical                    :: parameter_written(14)
+   logical                    :: parameter_written(15)
    integer*4                  :: i
    logical                    :: simulation_exists
    integer*4                  :: status
@@ -182,6 +182,8 @@ subroutine load_parameters(forced_snapshot)
                if (iscurrent(13)) para%snapshot_fmt = trim(var_value)
             case ('snapshot_prefix')
                if (iscurrent(14)) para%snapshot_prefix = trim(var_value)
+            case ('file_scalefactors')
+               if (iscurrent(15)) para%file_scalefactors = trim(var_value)
             case default
                call error(trim(var_name)//' is an unknown parameter.')
          end select
@@ -202,6 +204,13 @@ subroutine load_parameters(forced_snapshot)
       call out('Consider specifying a different simulation using "-simulation" or')
       call out('changing the paths in the parameter file.')
       stop
+   end if
+   if (.not.exists(para%file_scalefactors,.false.)) then
+      call out('ERROR: Could not find file specified by file_scalefactors:')
+      call out(trim(para%file_scalefactors))
+      stop
+   else
+      call load_scalefactors
    end if
    
    ! check physical parameters
@@ -244,6 +253,54 @@ subroutine load_parameters(forced_snapshot)
    end function iscurrent
    
 end subroutine load_parameters
+
+subroutine load_scalefactors
+
+   implicit none
+   
+   integer*4   :: snapshot,snapshot_min,snapshot_max,snapshot_expected
+   integer*4   :: status
+   real*4      :: a,aold
+   
+   ! determine minimum and maximum snapshot
+   snapshot_min = huge(snapshot_min)
+   snapshot_max = -huge(snapshot_max)
+   open(1,file=trim(para%file_scalefactors),action='read',form='formatted')
+   do
+      read(1,*,IOSTAT=status) snapshot,a
+      if (status>0) then
+         call error('unknown format of scale factor file')
+      else if (status<0) then
+         exit ! end of file
+      else
+         snapshot_min = min(snapshot_min,snapshot)
+         snapshot_max = max(snapshot_max,snapshot)
+      end if
+   end do
+   close(1)
+
+   ! read scale factors
+   if (allocated(scalefactor)) deallocate(scalefactor)
+   allocate(scalefactor(snapshot_min:snapshot_max))
+   snapshot_expected = snapshot_min
+   aold = 0.0
+   open(1,file=trim(para%file_scalefactors),action='read',form='formatted')
+   do
+      read(1,*,IOSTAT=status) snapshot,a
+      if (status>0) then
+         call error('unknown format of scale factor file')
+      else if (status<0) then
+         exit ! end of file
+      else
+         if (snapshot.ne.snapshot_expected) call error('snapshots in scale factor file must be in increasing order')
+         if (a<aold) call error('scale factors must be increasing with increasing snapshot index')
+         scalefactor(snapshot) = a
+         snapshot_expected = snapshot+1
+      end if
+   end do
+   close(1)
+
+end subroutine load_scalefactors
 
 subroutine save_particles_sorted_format(index)
 

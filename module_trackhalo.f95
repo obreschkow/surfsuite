@@ -122,8 +122,10 @@ subroutine task_trackhalo
       call hdf5_write_data('particles/id',p%id,'unique particle id')
       call hdf5_write_data('particles/species',p%species,'particle species (1 = gas, 2 = dark matter)')
       do sn = snapshot_min,snapshot_max
-         snstr = trim(snfile(sn))
+         write(snstr,'(A,I0)') 'snapshot_',sn
          call hdf5_add_group('particles/'//trim(snstr))
+         call hdf5_write_data('particles/'//trim(snstr)//'/scalefactor',scalefactor(sn), &
+         & 'scale factor between comoving and physical coordinates (=1/[1+z])')
          call hdf5_write_data('particles/'//trim(snstr)//'/rx',x(:,1,sn),'[simulation units] x-coordinate of position')
          call hdf5_write_data('particles/'//trim(snstr)//'/ry',x(:,2,sn),'[simulation units] y-coordinate of position')
          call hdf5_write_data('particles/'//trim(snstr)//'/rz',x(:,3,sn),'[simulation units] z-coordinate of position')
@@ -154,13 +156,14 @@ subroutine load_halo_evolving_particles(haloid,include_subhalos,center,snapshot_
    type(type_particle)                 :: particle
    integer*4,allocatable               :: ifile(:)
    integer*8,allocatable               :: position(:),list(:,:)
-   real*4                              :: x0(3)
+   real*4                              :: shift1(3),shift2(3)
 
    call load_halo_particles(haloid,include_subhalos)
    if (center) then
-      call center_particles(x0)
+      call center_particles(shift1,shift2)
    else
-      x0 = 0
+      shift1 = 0
+      shift2 = 0
    end if
 
    n = size(p)
@@ -203,7 +206,8 @@ subroutine load_halo_evolving_particles(haloid,include_subhalos,center,snapshot_
          end if
       
          read(1,pos=position(j)) particle
-         x(j,:,sn) = mod(particle%x-x0,para%L)
+         
+         x(j,:,sn) = mod(particle%x+shift1,para%L)+shift2
          v(j,:,sn) = particle%v
          
       end do

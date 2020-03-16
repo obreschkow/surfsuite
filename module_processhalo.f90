@@ -6,14 +6,15 @@ use module_system
 
 contains
 
-subroutine center_particles(x0)
+subroutine center_particles(shift1,shift2)
 
    implicit none
-   real*4,optional,intent(out)   :: x0(3) ! center of mass position
+   real*4,optional,intent(out)   :: shift1(3),shift2(3)
    integer*4                     :: d
    real*4                        :: h,c
    
-   if (present(x0)) x0=0
+   if (present(shift1)) shift1=0
+   if (present(shift2)) shift2=0
    
    do d = 1,3
    
@@ -22,13 +23,13 @@ subroutine center_particles(x0)
       if (maxval(p%x(d))-minval(p%x(d))>h) then
          p%x(d) = mod(p%x(d)+h,para%L)
          if (maxval(p%x(d))-minval(p%x(d))>h) call error('ERROR: Halo larger than half the simulation box.')
-         if (present(x0)) x0(d)=-h
+         if (present(shift1)) shift1(d)=h
       end if
 
       ! reset center of mass
       c = real(sum(real(p%x(d),8))/nparticles,4)
       p%x(d) = p%x(d)-c
-      if (present(x0)) x0(d)=x0(d)+c
+      if (present(shift2)) shift2(d)=-c
    
    end do
 

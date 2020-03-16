@@ -1,6 +1,6 @@
 module module_global
 
-   character(*),parameter  :: version = '0.19'
+   character(*),parameter  :: version = '0.20'
 
    type type_para
       character(len=255)   :: parameterfile
@@ -19,6 +19,7 @@ module module_global
       character(len=255)   :: ext_halolist
       character(len=255)   :: snapshot_fmt
       character(len=255)   :: snapshot_prefix
+      character(len=255)   :: file_scalefactors
    end type type_para
 
    type(type_para)         :: para
@@ -48,6 +49,9 @@ module module_global
    ! currently loaded particles (can be a subvolume, a single halo, substructure, etc.)
    type(type_particle),allocatable  :: p(:)        ! array of particle properties
    integer*8                        :: nparticles  ! number of particles stored in p(:)
+   
+   ! scale factors of different snapshots
+   real*4,allocatable      :: scalefactor(:)
    
    ! physical/mathematical constants
    real*4,parameter        :: pi = 3.14159265358979

@@ -99,3 +99,4 @@ ext_halolist      .halolist
 snapshot          199
 snapshot_fmt      A,I0.3
 snapshot_prefix   snapshot_
+file_scalefactors /Users/do/Data/SURFS/scalefactors200.txt

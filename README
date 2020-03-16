@@ -12,15 +12,16 @@ v0.7  13/02/2019: Significant updates, inclusion of HDF5 module, new showing rou
 v0.8  18/06/2019: Updated compiler flags, documentation, various fixes
 v0.9  15/10/2019: Added HDF5 outputs
 v0.10 15/11/2019: General clean up, improved gethalo routine
-v0.11 11/02/2019: improved description, cluster optimizations
-v0.12 21/02/2019: updated parameter files
-v0.13 23/02/2019: various fixes and clean ups
-v0.14 24/02/2019: more graphical parameters for showhalo, updated documentation
-v0.15 25/02/2019: added some file existence checks
-v0.16 26/02/2019: minor fixes, added a lot of checks
-v0.17 03/03/2019: improved documentation, generalised snapshot filenames, added trackhalo
-v0.18 12/03/2019: improved halo tracking, -center changed to positions only
-v0.19 13/03/2019: added slum example scripts, fixed bug with species in halo tracking
+v0.11 11/02/2020: improved description, cluster optimizations
+v0.12 21/02/2020: updated parameter files
+v0.13 23/02/2020: various fixes and clean ups
+v0.14 24/02/2020: more graphical parameters for showhalo, updated documentation
+v0.15 25/02/2020: added some file existence checks
+v0.16 26/02/2020: minor fixes, added a lot of checks
+v0.17 03/03/2020: improved documentation, generalised snapshot filenames, added trackhalo
+v0.18 12/03/2020: improved halo tracking, -center changed to positions only
+v0.19 13/03/2020: added slum example scripts, fixed bug with species in halo tracking
+v0.20 16/03/2020: added scale factors to tracking outputs
 
 Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
 
@@ -177,6 +178,13 @@ The VELOCIraptor HDF5 groups must be stored in one or several files of name
 The VELOCIraptor HDF5 particles must be stored in one or several files of name
 [path_velociraptor]/[snapshot][ext_particles] OR
 [path_velociraptor]/[snapshot][ext_particles].0, ...
+
+
+Scale factor file
+-----------------
+Some task require the scale factors, a = 1/(1+z), corresponding to the snapshots of the simulation. These must be
+given in an ascii-file, whose filename is specified by the parameter 'file_scalefactors'. The format of this file is
+...
 
 
 OUTPUT FILE FORMATS
