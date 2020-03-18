@@ -63,6 +63,8 @@ subroutine task_trackhalo
    if (snapshot_min<0) call error('arguemnt -from must best specified.')
    if (snapshot_max<0) call error('arguemnt -to must best specified.')
    if (snapshot_min>snapshot_max) call error('snapshot index "from" must be lower or equal than snapshot index "to".')
+   if (snapshot_min<lbound(scalefactor,1)) call error('snapshot -from is too low compared to the scale factor file.')
+   if (snapshot_max>ubound(scalefactor,1)) call error('snapshot -to is too high compared to the scale factor file.')
    
    call tic_total
    call out('TRACK EVOLUTION OF HALO',1_8*haloid)
