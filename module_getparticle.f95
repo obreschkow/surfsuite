@@ -17,9 +17,7 @@ subroutine task_getparticle
    integer*8            :: particleid
    
    read(task_value,*) particleid
-   call hline
    call write_particle(particleid)
-   call hline
    
 end subroutine task_getparticle
 
@@ -32,6 +30,7 @@ subroutine write_particle(id)
    integer*4            :: ifile
    
    call get_particle(id,particle,ifile)
+   call hline
    write(txt,'(A,A)')  'Simulation:  ',trim(para%simulation)
    call out(txt)
    write(txt,'(A,I0)') 'Particle:    ',particle%id
@@ -44,6 +43,7 @@ subroutine write_particle(id)
    call out(txt)
    write(txt,'(A,F11.4,A,F11.4,A,F11.4)') 'Velocity: ',particle%v(1),',',particle%v(2),',',particle%v(3)
    call out(txt)
+   call hline
    
 end subroutine write_particle
 
@@ -64,7 +64,15 @@ subroutine get_particle(id,particle,ifile)
    
    fn = trim(filename(ifile,para%path_surfsuite,snfile(para%snapshot),para%ext_sorted))
    
-   if (.not.exists(trim(fn),.true.)) call error('Particle ID outside allowed range or file lost.')
+   if (.not.exists(trim(fn),.true.)) then
+      fn = trim(filename(0,para%path_surfsuite,snfile(para%snapshot),para%ext_sorted))
+      if (.not.exists(trim(fn),.true.)) then
+         call out('Sorted particle files do not exist for this simulation.')
+         call error('Consider running the task "sortparticles".')
+      else
+         call error('Particle ID outside allowed range or file lost.')
+      end if
+   end if
    
    inquire(file=trim(fn), size=file_size)
    

@@ -22,6 +22,7 @@ v0.17 03/03/2020: improved documentation, generalised snapshot filenames, added 
 v0.18 12/03/2020: improved halo tracking, -center changed to positions only
 v0.19 13/03/2020: added slum example scripts, fixed bug with species in halo tracking
 v0.20 16/03/2020: added scale factors to tracking outputs
+v0.21 23/03/2020: additional error messages 
 
 Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
 
