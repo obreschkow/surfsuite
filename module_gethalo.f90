@@ -11,6 +11,7 @@ module module_gethalo
    public   :: task_gethalo
    public   :: nhalos
    public   :: load_halo_properties ! only load structure "halo"
+   public   :: load_all_halo_properties ! load array of structure "halo" for all halos
    public   :: load_halo_particles  ! load particle data of a halo
 
 contains
@@ -179,6 +180,21 @@ subroutine load_halo_properties(haloid,halo)
    close(1)
 
 end subroutine load_halo_properties
+
+subroutine load_all_halo_properties(halo)
+
+   implicit none
+   type(type_halo),allocatable,intent(out)   :: halo(:)
+   character(len=255)                        :: fn
+   
+   allocate(halo(nhalos()))
+   
+   fn = trim(para%path_surfsuite)//trim(snfile(para%snapshot))//trim(para%ext_halolist)
+   open(1,file=trim(fn),action='read',form='unformatted',status='old',access='stream')
+   read(1) halo
+   close(1)
+
+end subroutine load_all_halo_properties
 
 subroutine save_halo(outputfile,outputformat,haloid,halo)
 

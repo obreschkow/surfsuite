@@ -22,7 +22,8 @@ v0.17 03/03/2020: improved documentation, generalised snapshot filenames, added 
 v0.18 12/03/2020: improved halo tracking, -center changed to positions only
 v0.19 13/03/2020: added slum example scripts, fixed bug with species in halo tracking
 v0.20 16/03/2020: added scale factors to tracking outputs
-v0.21 23/03/2020: additional error messages 
+v0.21 23/03/2020: additional error messages
+v0.22 01/04/2020: fixed documentation
 
 Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
 
@@ -230,12 +231,14 @@ Simultaneously, the task 'makehalos' also generates a single master file, named
 [path_surfsuite]/[snapshot][ext_halolist]
 with pointers to the individual halos in the files [path_surfsuite]/[snapshot][ext_halos].
 This file is a binary stream of the format
-- idfile(1), position(1), npart(1), parentid(1)
-- idfile(2), position(2), npart(2), parentid(2)
+- idfile(1), position(1), npart(1), npartsub(1), parentid(1), nchildren(1), firstchildid(1), siblingid(1)
+- idfile(2), position(2), npart(2), npartsub(2), parentid(2), nchildren(2), firstchildid(2), siblingid(2)
 ...
-which, for each halo gives the file index, position of first_particle in the file, number of
-particles, parent halo ID. A parent halo ID of -1 is used for 1st generation halos. All four variables
-are 4-byte integer, thus the full stream has exactly nhalos*16 bytes.
+All 8 variables are 4-byte integer, thus the full stream has exactly nhalos*32 bytes. The meaning of these 8
+variables is: index of the halo-file, in which to look for the particles; position (in bytes) of the first particle;
+number of particles in the halo without substructure; number of particles in substructure only; halo ID of the parent
+halo, -1 is used for 1st generation halos; number of subhaloes in the generation immediately below; halo index of the
+first subhalo, -1 if no subhaloes; halo index of the next subhalo inside the same parent halo, -1 if none.
 
 Once the particles have been sorted into haloes with 'makehalos', the tasks 'gethalo' and 
 'showhalo' can be used.
