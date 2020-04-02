@@ -47,7 +47,7 @@ subroutine task_showhalo
    graph%mode = 0
    graph%npixels = 800
    graph%sidelength = 2
-   graph%smoothinglength = 0.2
+   graph%smoothinglength = 0.02
    graph%gamma = 0.6
    graph%lum = 1
    graph%projection = 1
@@ -229,7 +229,7 @@ subroutine raster_halo
          if ((ix>=1-nsmooth).and.(ix<=graph%npixels+nsmooth)) then
             iy = nint((y(i)/graph%sidelength+0.5)*graph%npixels)
             if ((iy>=1-nsmooth).and.(iy<=graph%npixels+nsmooth)) then
-               k = min(nint(f(ix,iy,p(i)%species)/density**2*12000+1),kernelsteps)
+               k = min(nint(f(ix,iy,p(i)%species)/density**1*100+1),kernelsteps)
                f(ix-nsmooth:ix+nsmooth,iy-nsmooth:iy+nsmooth,p(i)%species) = &
                &  f(ix-nsmooth:ix+nsmooth,iy-nsmooth:iy+nsmooth,p(i)%species)+kernel(:,:,k)
             end if
