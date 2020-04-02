@@ -98,7 +98,7 @@ subroutine task_showhalo
       end select
    end do
    call require_no_options_left
-   if (graph%smoothinglength>=graph%sidelength) call error('smoothinglength must be smaller than sidelength')
+   if ((graph%mode==1).and.(graph%smoothinglength>=graph%sidelength)) call error('smoothinglength must be smaller than sidelength')
    
    call load_halo_particles(haloid,subhalos==1)
    
@@ -109,6 +109,7 @@ subroutine task_showhalo
    end if
    
    call center_particles
+   call center_velocities
    call raster_halo
    
    if (output) then
@@ -152,29 +153,6 @@ subroutine raster_halo
    real*8                        :: rrms,vrms
    integer*8                     :: i,length
    
-   ! make smoothing kernel
-   nsmooth = int(graph%npixels*graph%smoothinglength/graph%sidelength*2)
-   allocate(kernel(-nsmooth:nsmooth,-nsmooth:nsmooth,kernelsteps))
-   do i = -nsmooth,nsmooth
-      do j = -nsmooth,nsmooth
-         q0 = sqrt(real(i**2+j**2))/nsmooth*2
-         do k = 1,kernelsteps
-            factor = 1+0.015*(k-1)**2.0
-            q = q0*factor
-            if (q<1) then
-               kernel(i,j,k) = (1-1.5*q**2+0.75*q**3)
-            else if (q<2) then
-               kernel(i,j,k) = (0.25*(2-q)**3)
-            else
-               kernel(i,j,k) = 0
-            end if
-         end do
-      end do
-   end do
-   do k = 1,kernelsteps
-      kernel(:,:,k) = kernel(:,:,k)/sum(kernel(:,:,k))
-   end do
-   
    ! rotation
    allocate(x(nparticles),y(nparticles),vx(nparticles),vy(nparticles))
    if (graph%projection==1) then
@@ -202,14 +180,14 @@ subroutine raster_halo
    npx = max(1,nint(dt*vrms/graph%sidelength*graph%npixels))
    
    ! raster channels
-   allocate(f(1-2*nsmooth:graph%npixels+2*nsmooth,1-2*nsmooth:graph%npixels+2*nsmooth,6))
-   f = 0
-   
    if (graph%mode == 0) then
+   
+      allocate(f(1:graph%npixels,1:graph%npixels,2))
+      f = 0
    
       do i = 1,nparticles
          ix = nint((x(i)/graph%sidelength+0.5)*graph%npixels)
-         if ((ix>=1-nsmooth).and.(ix<=graph%npixels+nsmooth)) then
+         if ((ix>=1).and.(ix<=graph%npixels)) then
             iy = nint((y(i)/graph%sidelength+0.5)*graph%npixels)
             if ((iy>=1).and.(iy<=graph%npixels)) then
                f(ix,iy,p(i)%species) = f(ix,iy,p(i)%species)+1
@@ -219,11 +197,38 @@ subroutine raster_halo
    
    else if (graph%mode == 1) then
    
+      ! make smoothing kernel
+      nsmooth = int(graph%npixels*graph%smoothinglength/graph%sidelength*2)
+      allocate(kernel(-nsmooth:nsmooth,-nsmooth:nsmooth,kernelsteps))
+      do i = -nsmooth,nsmooth
+         do j = -nsmooth,nsmooth
+            q0 = sqrt(real(i**2+j**2))/nsmooth*2
+            do k = 1,kernelsteps
+               factor = 1+0.015*(k-1)**2.0
+               q = q0*factor
+               if (q<1) then
+                  kernel(i,j,k) = (1-1.5*q**2+0.75*q**3)
+               else if (q<2) then
+                  kernel(i,j,k) = (0.25*(2-q)**3)
+               else
+                  kernel(i,j,k) = 0
+               end if
+            end do
+         end do
+      end do
+      do k = 1,kernelsteps
+         kernel(:,:,k) = kernel(:,:,k)/sum(kernel(:,:,k))
+      end do
+      
+      allocate(f(1-2*nsmooth:graph%npixels+2*nsmooth,1-2*nsmooth:graph%npixels+2*nsmooth,2))
+      f = 0
+   
+      ! smooth all particles
       do i = 1,nparticles
          ix = nint((x(i)/graph%sidelength+0.5)*graph%npixels)
          if ((ix>=1-nsmooth).and.(ix<=graph%npixels+nsmooth)) then
             iy = nint((y(i)/graph%sidelength+0.5)*graph%npixels)
-            if ((iy>=1).and.(iy<=graph%npixels)) then
+            if ((iy>=1-nsmooth).and.(iy<=graph%npixels+nsmooth)) then
                k = min(nint(f(ix,iy,p(i)%species)/density**2*12000+1),kernelsteps)
                f(ix-nsmooth:ix+nsmooth,iy-nsmooth:iy+nsmooth,p(i)%species) = &
                &  f(ix-nsmooth:ix+nsmooth,iy-nsmooth:iy+nsmooth,p(i)%species)+kernel(:,:,k)
@@ -232,6 +237,9 @@ subroutine raster_halo
       end do
       
    else if (graph%mode == 2) then
+   
+      allocate(f(1:graph%npixels,1:graph%npixels,2))
+      f = 0
    
       length = 0
       do i = 1,nparticles
@@ -244,7 +252,7 @@ subroutine raster_halo
          length = length+n
          do k = -n,n
             ix = nint(x0+real(k)/n/2*dx)
-            if ((ix>=1-nsmooth).and.(ix<=graph%npixels+nsmooth)) then
+            if ((ix>=1).and.(ix<=graph%npixels)) then
                iy = nint(y0+real(k)/n/2*dy)
                if ((iy>=1).and.(iy<=graph%npixels)) f(ix,iy,p(i)%species) = f(ix,iy,p(i)%species)+add
             end if

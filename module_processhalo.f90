@@ -35,4 +35,20 @@ subroutine center_particles(shift1,shift2)
 
 end subroutine center_particles
 
+subroutine center_velocities
+
+   implicit none
+   integer*4                     :: d
+   real*4                        :: c
+   
+   do d = 1,3
+   
+      ! reset center of mass velocity
+      c = real(sum(real(p%v(d),8))/nparticles,4)
+      p%v(d) = p%v(d)-c
+   
+   end do
+
+end subroutine center_velocities
+
 end module module_processhalo
