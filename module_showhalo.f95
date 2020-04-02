@@ -251,8 +251,6 @@ subroutine raster_halo
          end do
       end do
       f = f/real(npx)*real(length)/real(nparticles)
-      
-      write(*,*) sum(f(:,:,1)),sum(f(:,:,2)),count(p%species==1),count(p%species==2)
    
    end if
    
