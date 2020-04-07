@@ -1,6 +1,6 @@
 program surfsuite
 
-   use module_interface
+   use shared_module_interface
    use module_system
    use module_io
    use module_sortparticles

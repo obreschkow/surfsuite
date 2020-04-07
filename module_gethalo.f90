@@ -1,7 +1,7 @@
 module module_gethalo
 
-   use module_interface
-   use module_hdf5
+   use shared_module_interface
+   use shared_module_hdf5
    use module_global
    use module_system
    use module_io

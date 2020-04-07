@@ -6,7 +6,7 @@
 !
 ! 2) It handles programm outputs on the scree or logfile, including timings
 
-module module_interface
+module shared_module_interface
 
    public
    
@@ -56,8 +56,11 @@ module module_interface
       if (narg>0) then
          call getarg(1,argument)
          if ((argument=='version').or.(argument=='-version').or.(argument=='-v').or.(argument=='-help').or.(argument=='help')) then
+            write(*,'(A)') hline_str
             write(*,'(A)') trim(version_str)
+            write(*,'(A)') 'Developed by Danail Obreschkow (danail.obreschkow@icrar.org).'
             write(*,'(A)') 'Consult the README file for additional information.'
+            write(*,'(A)') hline_str
             stop
          end if
       end if
@@ -439,4 +442,4 @@ module module_interface
       
    end subroutine require_no_options_left
 
-end module module_interface
+end module shared_module_interface

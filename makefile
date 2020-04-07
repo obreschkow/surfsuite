@@ -56,8 +56,8 @@ PROGRAMS = surfsuite
 # "make" builds all
 all: $(PROGRAMS)
 
-surfsuite.o:   module_interface.o \
-               module_hdf5.o \
+surfsuite.o:   shared_module_interface.o \
+               shared_module_hdf5.o \
                module_global.o \
                module_system.o \
                module_io.o \
@@ -68,8 +68,8 @@ surfsuite.o:   module_interface.o \
                module_gethalo.o \
                module_trackhalo.o \
                module_showhalo.o
-surfsuite: 	   module_interface.o \
-               module_hdf5.o \
+surfsuite: 	   shared_module_interface.o \
+               shared_module_hdf5.o \
                module_global.o \
                module_system.o \
                module_io.o \

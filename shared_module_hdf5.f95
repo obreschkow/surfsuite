@@ -1,6 +1,6 @@
 ! This module comprises Fortran routines for reading and writing HDF5 data
    
-module module_hdf5
+module shared_module_hdf5
 
    use hdf5
    
@@ -617,4 +617,4 @@ contains
 
    end subroutine get_mem_type_id
    
-end module module_hdf5
+end module shared_module_hdf5

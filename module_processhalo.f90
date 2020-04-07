@@ -1,6 +1,6 @@
 module module_processhalo
 
-use module_interface
+use shared_module_interface
 use module_global
 use module_system
 

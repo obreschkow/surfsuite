@@ -1,10 +1,10 @@
 module module_makehalos
 
-use module_interface
+use shared_module_interface
+use shared_module_hdf5
 use module_global
 use module_system
 use module_io
-use module_hdf5
 use module_getparticle
 
 private
