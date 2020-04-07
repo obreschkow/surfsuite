@@ -24,6 +24,7 @@ v0.19 13/03/2020: added slum example scripts, fixed bug with species in halo tra
 v0.20 16/03/2020: added scale factors to tracking outputs
 v0.21 23/03/2020: additional error messages
 v0.22 01/04/2020: fixed documentation, centered velocities in showhalo
+v0.23 07/04/2020: uses new module module_interface to facilitate user interface
 
 Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
 
@@ -31,7 +32,7 @@ Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
 QUICK START ON A GENERIC MACHINE
 ====================================================================================================================
 
-1) Install gfortran (tested for versions 4.7, 4.8 and 5.0).
+1) Install gfortran (code tested for GNU Fortran 9.3.0).
 2) In a terminal, download surfsuite
    > git clone https://github.com/obreschkow/surfsuite
 3) Got to surfsuite directory
@@ -139,6 +140,8 @@ Optional arguments used by all routines
 
 -snapshot (default set in parameter-file): overwrites the 'snapshot' number given in parameters.txt to allow
  a quick access to a different snapshot, keeping all the other parameters identical.
+
+-verbose (default 1): logical flag specifying whether surfsuite produces an output on the screen/logfile (1) or remains muted (0)
 
 -logfile (default none) allows the user to specify a path+filename for the screen-log, which is particularly usefull
  if the code is executed using a queueing system

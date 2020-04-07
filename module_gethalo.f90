@@ -1,10 +1,10 @@
 module module_gethalo
 
-   use module_taskhandler
+   use module_interface
+   use module_hdf5
    use module_global
    use module_system
    use module_io
-   use module_hdf5
    use module_processhalo
 
    private 
@@ -20,9 +20,7 @@ subroutine task_gethalo
 
    implicit none
    integer*4                  :: haloid
-   integer*4                  :: i
-   logical                    :: output
-   character(len=255)         :: outputfile
+   character(len=255)         :: outputfile = ''
    integer*4                  :: outputformat ! 1=binary, 2=ascii, 3=hdf5
    integer*4                  :: subhalos,center
    type(type_halo)            :: halo
@@ -30,33 +28,21 @@ subroutine task_gethalo
    read(task_value,*) haloid
    
    ! default options
-   output = .false.
    outputformat = 1
    subhalos = 0
    center = 0
    
    ! handle options
-   do i = 1,n_options
-      select case (trim(option_name(i)))
-      case ('-outputfile')
-         call using_option(i)
-         output = .true.
-         outputfile = trim(option_value(i))
-      case ('-outputformat')
-         call using_option(i)
-         read(option_value(i),*) outputformat
-         if ((outputformat<1).or.(outputformat>3)) call error('outputformat must be 1, 2 or 3.')
-      case ('-subhalos')
-         call using_option(i)
-         read(option_value(i),*) subhalos
-         if ((subhalos<0).or.(subhalos>1)) call error('subhalos must be 0 or 1.')
-      case ('-center')
-         call using_option(i)
-         read(option_value(i),*) center
-         if ((center<0).or.(center>1)) call error('center must be 0 or 1.')
-      end select
-   end do
+   if (opt('-outputfile')) outputfile = trim(opt_val)
+   if (opt('-outputformat')) read(opt_val,*) outputformat
+   if (opt('-subhalos')) read(opt_val,*) subhalos
+   if (opt('-center')) read(opt_val,*) center
    call require_no_options_left
+   
+   ! check inputs
+   if ((outputformat<1).or.(outputformat>3)) call error('outputformat must be 1, 2 or 3.')
+   if ((subhalos<0).or.(subhalos>1)) call error('subhalos must be 0 or 1.')
+   if ((center<0).or.(center>1)) call error('center must be 0 or 1.')
    
    ! load halo
    call load_halo_properties(haloid,halo)
@@ -64,7 +50,7 @@ subroutine task_gethalo
    if (center==1) call center_particles
    
    ! write/save halo
-   if (output) then
+   if (trim(outputfile).ne.'') then
       call save_halo(outputfile,outputformat,haloid,halo)
    else
       call hline
@@ -84,11 +70,7 @@ integer*4 function nhalos()
     
    fn = trim(para%path_surfsuite)//trim(snfile(para%snapshot))//trim(para%ext_halolist)
    inquire(file=trim(fn),exist=file_exists)
-   if (.not.file_exists) then
-      call out('Error: Could not find file')
-      call out(trim(fn))
-      stop
-   end if
+   if (.not.file_exists) call error('could not find file'//trim(fn))
    inquire(file=trim(fn),size=filesize)
    nhalos = int(filesize/int(bytes_per_halo,8),4)
 
@@ -147,10 +129,7 @@ subroutine load_halo_particles(haloid,include_subhalos)
       end if
    
       if (.not.present(recursive_call)) then
-         if (nparticles.ne.size(p)) then
-            call out('Error in load_halo_particles: n.ne.nparticles')
-            stop
-         end if
+         if (nparticles.ne.size(p)) call error('in load_halo_particles: n.ne.nparticles')
       end if
    
    end subroutine load_particles
@@ -163,15 +142,12 @@ subroutine load_halo_properties(haloid,halo)
    integer*4,intent(in)                   :: haloid
    type(type_halo),intent(out)            :: halo
    character(len=255)                     :: fn
+   character(len=20)                      :: idstr
    integer*8                              :: position
    
-   if (haloid<1) then
-      call out('Error: HaloID below 1:',haloid*1_8)
-      stop
-   else if (haloid>nhalos()) then
-      call out('Error: HaloID too large:',haloid*1_8)
-      stop
-   end if
+   write(idstr,*) haloid
+   if (haloid<1) call error('HaloID below 1: '//trim(idstr))
+   if (haloid>nhalos()) call error('HaloID too large: '//trim(idstr))
    
    fn = trim(para%path_surfsuite)//trim(snfile(para%snapshot))//trim(para%ext_halolist)
    position = int(bytes_per_halo,8)*int(haloid-1,8)+1_8
@@ -265,8 +241,7 @@ subroutine save_halo(outputfile,outputformat,haloid,halo)
       call hdf5_close() ! close HDF5 file
       
    else
-      call out('Error: Unknown outputformat.')
-      stop
+      call error('unknown outputformat.')
    end if
 end subroutine save_halo
 

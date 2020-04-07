@@ -1,5 +1,6 @@
 module module_sortparticles
 
+use module_interface
 use module_global
 use module_system
 use module_io
@@ -21,11 +22,11 @@ contains
 subroutine task_sortparticles
 
    implicit none
-   integer*4   :: i
+   integer*4            :: i
+   character(len=255)   :: fn
    
-   call tic_total
+   call task_getgadgetproperties
    
-   call determine_gadget_snapshot_properties
    nfiles_sorted_particles = int(nparticles_tot/nparticles_per_sorted_file,4)
    if (nfiles_sorted_particles*nparticles_per_sorted_file<nparticles_tot) then
       nfiles_sorted_particles = nfiles_sorted_particles+1
@@ -34,24 +35,21 @@ subroutine task_sortparticles
    call split_particles_into_sort_files
    
    do i = 0,nfiles_sorted_particles-1
+   
+      fn = filename(i,para%path_surfsuite,snfile(para%snapshot),para%ext_sorted)
+      call tic('PROCESS FILE '//trim(fn))
+      call out('Load particles from file')
       call load_particles_sorted_format(i)
+      call out('Sort particles by increasing ID')
       call sort_particles
+      call out('Save particles to file')
       call save_particles_sorted_format(i)
+      call toc
       deallocate(p)
+      
    end do
    
-   call toc_total
-
 end subroutine task_sortparticles
-
-subroutine task_getgadgetproperties
-
-   implicit none
-   
-   call hline
-   call determine_gadget_snapshot_properties
-   
-end subroutine task_getgadgetproperties
 
 subroutine sort_particles
 
@@ -61,16 +59,10 @@ subroutine sort_particles
    integer*8                     :: i
    integer*8                     :: id0,id1
    
-   call tic
-   call out('SORT FILE')
-   
    id0 = minval(p%id)-1
    id1 = maxval(p%id)
    
-   if (id1-id0.ne.size(p)) then
-      call out('Error: indexing mistake.')
-      stop
-   end if
+   if (id1-id0.ne.size(p)) call error('indexing mistake.')
 
    allocate(sortlist(nparticles))
    do i = 1,nparticles
@@ -78,8 +70,6 @@ subroutine sort_particles
    end do
    
    p = p(sortlist)
-   
-   call toc
 
 end subroutine sort_particles
 
@@ -129,8 +119,7 @@ subroutine split_particles_into_sort_files
       ! load file
       fn = filename(ifile_gadget,para%path_gadget,snfile(para%snapshot))
       
-      call tic
-      call out('SPLIT GADGET FILE INTO SORTABLE FILES')
+      call tic('SPLIT GADGET FILE INTO SORTABLE FILES')
       call out('Filename: '//trim(fn))
    
       ! read header
@@ -214,32 +203,15 @@ subroutine split_particles_into_sort_files
    end do
    
    ! final checks
-   if (iparticles_tot.ne.nparticles_tot) then
-      call out('Error: wrong particle count.')
-      stop
-   end if
-   if (xmin<0) then
-      call out('Error: xmin should not be smaller than 0.')
-      stop
-   end if
-   if (xmin>para%L) then
-      call out('Error: xmin should not be larger than box length L.')
-      stop
-   end if
-   if (idmin.ne.1) then
-      call out('Error: Minimal particle ID must be 1.')
-      stop
-   end if
-   if (idmax.ne.nparticles_tot) then
-      write(*,*) nparticles_tot
-      write(*,*) idmax
-      call out('Error: Maximal particle ID must be equal to the number of particles.')
-      stop
-   end if
+   if (iparticles_tot.ne.nparticles_tot) call error('wrong particle count.')
+   if (xmin<0) call error('xmin should not be smaller than 0.')
+   if (xmin>para%L) call error('xmin should not be larger than box length L.')
+   if (idmin.ne.1) call error('minimal particle ID must be 1.')
+   if (idmax.ne.nparticles_tot) call out('maximal particle ID must be equal to the number of particles.')
    
 end subroutine split_particles_into_sort_files
 
-subroutine determine_gadget_snapshot_properties
+subroutine task_getgadgetproperties
 
    implicit none
    character(len=255)   :: fn
@@ -250,7 +222,8 @@ subroutine determine_gadget_snapshot_properties
    logical              :: file_exists
    character(len=255)   :: txt
    
-   call tic
+   call hline
+   
    call out('SUMMARY OF CURRENT SIMULAITON DATA')
    
    call out('Simulation: '//trim(para%simulation))
@@ -266,10 +239,7 @@ subroutine determine_gadget_snapshot_properties
    do i = 0,nfiles_gadget_unsorted-1
       fn = filename(i,para%path_gadget,snfile(para%snapshot))
       inquire(file=trim(fn),exist=file_exists)
-      if (.not.file_exists) then
-         call out('Error: File does not exist '//trim(fn))
-         stop
-      end if
+      if (.not.file_exists) call error('File does not exist '//trim(fn))
       open(1,file=trim(fn),action='read',form='unformatted',status='old')
       read(1) np
       close(1)
@@ -279,8 +249,7 @@ subroutine determine_gadget_snapshot_properties
       inquire(file=trim(fn),size=file_size)
       extra = int((file_size-288_8)/sum(np)-32,4)
       if (extra<-5) then ! not 0, because 32-bytes is only true when IDs are stored as int*8, not int*4
-         call out('Error: Format of input file not recognized.')
-         stop
+         call error('Format of input file not recognized.')
       else if ((extra>0).and.(i==0)) then
          call out('Warning: File contains more particle data than positions, velocities and IDs.')
          call out('         These additional data are be ignored by surfsuite.')
@@ -300,10 +269,7 @@ subroutine determine_gadget_snapshot_properties
          if (box==0) then
             box = int(real(np_tot(i),8)**(1.0_8/3.0_8)+0.5_8,4)
          end if
-         if (np_tot(i).ne.int(box,8)**3) then
-            call out('ERROR: Number of particles is not a cubic number.')
-            stop
-         end if
+         if (np_tot(i).ne.int(box,8)**3) call error('Number of particles is not a cubic number.')
       end if
    end do
    write(txt,'(A,I0,A,I0,A)') &
@@ -312,6 +278,6 @@ subroutine determine_gadget_snapshot_properties
    
    call hline
    
-end subroutine determine_gadget_snapshot_properties
+end subroutine task_getgadgetproperties
 
 end module module_sortparticles

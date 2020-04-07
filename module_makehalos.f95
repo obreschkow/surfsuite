@@ -1,6 +1,6 @@
 module module_makehalos
 
-use module_taskhandler
+use module_interface
 use module_global
 use module_system
 use module_io
@@ -32,11 +32,9 @@ subroutine task_makehalos
       call error('unequal numbers of VELOCIraptor particle files and group files.')
    end if
    
-   call tic_total
    call makehalolist
    call makehalos
-   call toc_total
-
+   
 end subroutine task_makehalos
 
 subroutine makehalolist
@@ -51,7 +49,7 @@ subroutine makehalolist
    integer*4               :: nhalos_tot,npart_file
    integer*8               :: npart_tot
    
-   call out('MAKE HALO LIST WITH PARTICLE POINTERS')
+   call tic('MAKE HALO LIST WITH PARTICLE POINTERS')
    
    call out('Number of VELOCIraptor group files:',nfiles_velociraptor*1_8)
    
@@ -64,7 +62,6 @@ subroutine makehalolist
    nhalos_tot = 0
    npart_tot = 0
    do i = 0,nfiles_velociraptor-1
-   
       
       ! determine number of particles in file
       fn = filename(i,fnbase2)
@@ -87,10 +84,9 @@ subroutine makehalolist
       npart(1:nhalos-1) = firstposition(2:nhalos)-firstposition(1:nhalos-1)
       npart(nhalos) = npart_file-firstposition(nhalos)
       if (minval(npart)<0) then
-         call out('ERROR: something went wrong in reading the VELOCIraptor group files,')
-         call out('as there  are halos with a negative number of particles.')
          close(1)
-         stop
+         call error('something went wrong in reading the VELOCIraptor group files, '// &
+         & 'as there  are halos with a negative number of particles.')
       end if
       
       ! adjust parent IDs
@@ -121,7 +117,7 @@ subroutine makehalolist
    call out('Total number of halos:',nhalos_tot*1_8)
    call out('Total number of particles in halos:',npart_tot)
    
-   call toc_total
+   call toc
    
    contains
    
@@ -197,12 +193,7 @@ subroutine makehalos
    type(type_particle)     :: particle
    integer*4               :: npart_file
    
-   call tic
-   call out('INITIALIZE INPUT FILES')
-   
    fnbase = trim(para%path_velociraptor)//trim(snfile(para%snapshot))//trim(para%ext_particles)
-   
-   call out('Number of VelociRaptor particle files:',nfiles_velociraptor*1_8)
    
    ! open all sorted particle files
    ifileold = -1
@@ -214,13 +205,11 @@ subroutine makehalos
          & action='read',form='unformatted',status='old',access='stream')
       end if
    end do
-   call toc
    
    n = 0
    do i = 0,nfiles_velociraptor-1
       
-      call out('WRITE HALO FILE ',i*1_8)
-      call tic
+      call tic('EXTRACT HALO FILE FROM VELOCIRAPTOR FILE')
       
       ! read particles IDs
       fn = filename(i,fnbase)
@@ -248,9 +237,7 @@ subroutine makehalos
          ifileold = ifileold
          positionold = position
          if (particle%id.ne.array(j)) then
-            call out('ERROR: something goes wrong in reading sorted particles based on')
-            call out('the VELOCIraptor particle files.')
-            stop
+            call error('something goes wrong in reading sorted particles based on the VELOCIraptor particle files.')
          end if
          write(1) particle
       end do
@@ -266,6 +253,7 @@ subroutine makehalos
    end do
    
    call out('Total number of particles in halos:',n*1_8)
+   call hline
 
 end subroutine makehalos
 

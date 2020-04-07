@@ -1,13 +1,11 @@
 module module_getparticle
 
-use module_taskhandler
+use module_interface
 use module_global
 use module_system
 use module_io
 
 implicit none
-
-character(*),parameter  :: module_getparticle_use = '> surfsuite getparticle ID'
 
 contains
 
@@ -67,8 +65,7 @@ subroutine get_particle(id,particle,ifile)
    if (.not.exists(trim(fn),.true.)) then
       fn = trim(filename(0,para%path_surfsuite,snfile(para%snapshot),para%ext_sorted))
       if (.not.exists(trim(fn),.true.)) then
-         call out('Sorted particle files do not exist for this simulation.')
-         call error('Consider running the task "sortparticles".')
+         call error('Sorted particle files do not exist for this simulation. Consider running the task "sortparticles".')
       else
          call error('Particle ID outside allowed range or file lost.')
       end if

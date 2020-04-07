@@ -1,6 +1,6 @@
 module module_showhalo
 
-   use module_taskhandler
+   use module_interface
    use module_global
    use module_system
    use module_io
@@ -33,7 +33,6 @@ subroutine task_showhalo
    implicit none
    
    integer*4                  :: haloid
-   integer*4                  :: i
    logical                    :: output
    character(len=255)         :: outputfile
    integer*4                  :: subhalos,at
@@ -53,51 +52,28 @@ subroutine task_showhalo
    graph%projection = 1
    
    ! handle options
-   do i = 1,n_options
-      select case (trim(option_name(i)))
-      case ('-outputfile')
-         call using_option(i)
-         output = .true.
-         outputfile = trim(option_value(i))
-      case ('-subhalos')
-         call using_option(i)
-         read(option_value(i),*) subhalos
-         if ((subhalos<0).or.(subhalos>1)) call error('subhalos must be 0 or 1.')
-      case ('-at')
-         call using_option(i)
-         read(option_value(i),*) at
-         if (at<0) call error('"at" must be a snapshot index >=0.')
-      case ('-mode')
-         call using_option(i)
-         read(option_value(i),*) graph%mode
-         if ((graph%mode<0).or.(graph%mode>2)) call error('mode must be 0, 1 or 2.')
-      case ('-npixels')
-         call using_option(i)
-         read(option_value(i),*) graph%npixels
-         if (graph%npixels<=0) call error('npixels must be a positive integer.')
-      case ('-sidelength')
-         call using_option(i)
-         read(option_value(i),*) graph%sidelength
-         if (graph%sidelength<=0.0) call error('sidelength must be a positive real.')
-      case ('-smoothinglength')
-         call using_option(i)
-         read(option_value(i),*) graph%smoothinglength
-         if (graph%smoothinglength<=0.0) call error('smoothinglength must be a positive real.')
-      case ('-lum')
-         call using_option(i)
-         read(option_value(i),*) graph%lum
-         if (graph%lum<=0.0) call error('lum must be a positive real.')
-      case ('-gamma')
-         call using_option(i)
-         read(option_value(i),*) graph%gamma
-         if (graph%gamma<=0.0) call error('gamma must be a positive real.')
-      case ('-projection')
-         call using_option(i)
-         read(option_value(i),*) graph%projection
-         if ((graph%projection<1).or.(graph%projection>3)) call error('projection must be 1, 2 or 3.')
-      end select
-   end do
+   if (opt('-outputfile')) outputfile = trim(opt_val)
+   if (opt('-subhalos')) read(opt_val,*) subhalos
+   if (opt('-at')) read(opt_val,*) at
+   if (opt('-mode')) read(opt_val,*) graph%mode
+   if (opt('-npixels')) read(opt_val,*) graph%npixels
+   if (opt('-sidelength')) read(opt_val,*) graph%sidelength
+   if (opt('-smoothinglength')) read(opt_val,*) graph%smoothinglength
+   if (opt('-lum')) read(opt_val,*) graph%lum
+   if (opt('-gamma')) read(opt_val,*) graph%gamma
+   if (opt('-projection')) read(opt_val,*) graph%projection
    call require_no_options_left
+   
+   ! checks
+   if ((subhalos<0).or.(subhalos>1)) call error('subhalos must be 0 or 1.')
+   if (at<0) call error('"at" must be a snapshot index >=0.')
+   if ((graph%mode<0).or.(graph%mode>2)) call error('mode must be 0, 1 or 2.')
+   if (graph%npixels<=0) call error('npixels must be a positive integer.')
+   if (graph%sidelength<=0.0) call error('sidelength must be a positive real.')
+   if (graph%smoothinglength<=0.0) call error('smoothinglength must be a positive real.')
+   if (graph%lum<=0.0) call error('lum must be a positive real.')
+   if (graph%gamma<=0.0) call error('gamma must be a positive real.')
+   if ((graph%projection<1).or.(graph%projection>3)) call error('projection must be 1, 2 or 3.')
    if ((graph%mode==1).and.(graph%smoothinglength>=graph%sidelength)) call error('smoothinglength must be smaller than sidelength')
    
    call load_halo_particles(haloid,subhalos==1)

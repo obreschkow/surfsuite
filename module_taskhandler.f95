@@ -198,5 +198,11 @@ module module_taskhandler
       if (stop_at_warnings) stop
    
    end subroutine warning
+   
+   subroutine hline
+   
+      implicit none
+      call out('----------------------------------------------------------------------------------')
+   end subroutine hline
 
 end module module_taskhandler

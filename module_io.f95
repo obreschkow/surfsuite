@@ -1,5 +1,6 @@
 module module_io
 
+use module_interface
 use module_global
 use module_system
 
@@ -114,10 +115,9 @@ function get_number_of_subfiles(filebase) result(nfiles)
    
 end function get_number_of_subfiles
 
-subroutine load_parameters(forced_snapshot)
+subroutine load_parameters
 
    implicit none
-   integer*4,intent(in)       :: forced_snapshot
    character(255)             :: line
    character(50)              :: var_name
    character(205)             :: var_value
@@ -129,8 +129,6 @@ subroutine load_parameters(forced_snapshot)
    integer*4                  :: status
    
    call check_exists(para%parameterfile)
-   
-   if (forced_snapshot>=0) para%snapshot = forced_snapshot
    
    parameter_written = .false.
    current = ''
@@ -155,7 +153,7 @@ subroutine load_parameters(forced_snapshot)
                end if
                current = trim(var_value)
             case ('snapshot')
-               if (iscurrent(1).and.(forced_snapshot<0)) read(var_value,*) para%snapshot
+               if (iscurrent(1)) read(var_value,*) para%snapshot
             case ('L')
                if (iscurrent(2)) read(var_value,*) para%L
             case ('N')
@@ -309,20 +307,11 @@ subroutine save_particles_sorted_format(index)
    character(len=255)   :: fn
    integer*8            :: i
 
-   call tic
-   
-   ! write user info
    fn = filename(index,para%path_surfsuite,snfile(para%snapshot),para%ext_sorted)
-   call out('SAVE FILE '//trim(fn))
-   call out('Number of particles:',nparticles)
-
-   ! write data
    open(1,file=trim(fn),action='write',form='unformatted',status='replace',access='stream')
    write(1) (p(i),i=1,nparticles)
    close(1)
    
-   call toc
-
 end subroutine save_particles_sorted_format
 
 subroutine load_particles_sorted_format(index)
@@ -332,13 +321,8 @@ subroutine load_particles_sorted_format(index)
    character(len=255)   :: fn
    integer*8            :: i,file_size
    
-   call tic
-
-   ! write user info
-   fn = filename(index,para%path_surfsuite,snfile(para%snapshot),para%ext_sorted)
-   call out('LOAD FILE '//trim(fn))
-
    ! determine number of particles from file size
+   fn = filename(index,para%path_surfsuite,snfile(para%snapshot),para%ext_sorted)
    inquire(file=trim(fn), size=file_size)
    nparticles = file_size/bytes_per_particle
    
@@ -357,8 +341,6 @@ subroutine load_particles_sorted_format(index)
       deallocate(p)
       
    end if
-   
-   call toc
 
 end subroutine load_particles_sorted_format
 

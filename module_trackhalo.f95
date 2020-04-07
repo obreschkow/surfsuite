@@ -1,6 +1,6 @@
 module module_trackhalo
 
-use module_taskhandler
+use module_interface
 use module_global
 use module_system
 use module_io
@@ -20,7 +20,6 @@ subroutine task_trackhalo
 
    implicit none
    
-   integer*4               :: i
    integer*4               :: haloid
    integer*4               :: subhalos = 0
    integer*4               :: center = 1
@@ -30,48 +29,32 @@ subroutine task_trackhalo
    real*4,allocatable      :: x(:,:,:)
    real*4,allocatable      :: v(:,:,:)
    type(type_halo)         :: halo
+   character(len=20)        :: idstr
    
    read(task_value,*) haloid
    
    ! handle options
-   do i = 1,n_options
-      select case (trim(option_name(i)))
-      case ('-outputfile')
-         call using_option(i)
-         outputfile = trim(option_value(i))
-      case ('-from')
-         call using_option(i)
-         read(option_value(i),*) snapshot_min
-         if (snapshot_min<0) call error('argument of -from must be >=0.')
-      case ('-to')
-         call using_option(i)
-         read(option_value(i),*) snapshot_max
-         if (snapshot_max<0) call error('argument of -to must be >=0.')
-      case ('-subhalos')
-         call using_option(i)
-         read(option_value(i),*) subhalos
-         if ((subhalos<0).or.(subhalos>1)) call error('Error: subhalos must be 0 or 1.')
-      case ('-center')
-         call using_option(i)
-         read(option_value(i),*) center
-         if ((center<0).or.(center>1)) call error('Error: center must be 0 or 1.')
-      end select
-   end do
+   if (opt('-outputfile',required=.true.)) outputfile = trim(opt_val)
+   if (opt('-from',required=.true.)) read(opt_val,*) snapshot_min
+   if (opt('-to',required=.true.)) read(opt_val,*) snapshot_max
+   if (opt('-subhalos')) read(opt_val,*) subhalos
+   if (opt('-center')) read(opt_val,*) center
    call require_no_options_left
    
-   if (trim(outputfile)=='') call error('argument -outputfile must be specified.')
-   if (snapshot_min<0) call error('arguemnt -from must best specified.')
-   if (snapshot_max<0) call error('arguemnt -to must best specified.')
+   if (snapshot_min<0) call error('argument of -from must be >=0.')
+   if (snapshot_max<0) call error('argument of -to must be >=0.')
+   if ((subhalos<0).or.(subhalos>1)) call error('subhalos must be 0 or 1.')
+   if ((center<0).or.(center>1)) call error('center must be 0 or 1.')
    if (snapshot_min>snapshot_max) call error('snapshot index "from" must be lower or equal than snapshot index "to".')
    if (snapshot_min<lbound(scalefactor,1)) call error('snapshot -from is too low compared to the scale factor file.')
    if (snapshot_max>ubound(scalefactor,1)) call error('snapshot -to is too high compared to the scale factor file.')
    
-   call tic_total
-   call out('TRACK EVOLUTION OF HALO',1_8*haloid)
+   write(idstr,*) haloid
+   call tic('TRACK EVOLUTION OF HALO '//trim(idstr))
    call load_halo_properties(haloid,halo)
    call load_halo_evolving_particles(haloid,subhalos==1,center==1,snapshot_min,snapshot_max,x,v)
    call save_evolving_particles
-   call toc_total
+   call toc
    
    contains
     

@@ -1,6 +1,6 @@
 program surfsuite
 
-   use module_taskhandler
+   use module_interface
    use module_system
    use module_io
    use module_sortparticles
@@ -12,55 +12,24 @@ program surfsuite
 
    implicit none
 
-   integer*4   :: forced_snapshot
-   integer*4   :: i
-   
    ! Change default options
    para%parameterfile = 'parameters.txt'
    para%simulation = ''
-   forced_snapshot = -1
    
-   ! handle arguments
-   call get_arguments
+   ! start user interface
+   call set_version_text('This is surfsuite version '//trim(version)//'.')
+   call interface_start
+   call require_task(.true.) ! this is to say that the programm always requires a task (unless the option is -version/-v)
    
-   if (.not.task_exists) then
-      call out('The general use is: surfsuite task [-option ...]')
-      call out('Consult the README file for additional information.')
-      stop
-   end if
-   
-   do i = 1,n_options
-   
-      select case (trim(option_name(i)))
-      case ('-parameterfile')
-         call using_option(i)
-         para%parameterfile = trim(option_value(i))
-      case ('-simulation')
-         call using_option(i)
-         para%simulation = trim(option_value(i))
-      case ('-snapshot')
-         call using_option(i)
-         read(option_value(i),*) forced_snapshot
-      case ('-logfile')
-         call using_option(i)
-         logfile_name = trim(option_value(i))
-      end select
-   
-   end do
-   
-   if (trim(task_name)=='version') then
-      call require_task_value(.false.)
-      call require_no_options_left
-      write(*,'(A,A,A)') 'This is SurfSuite Version ',version,'.'
-      write(*,'(A)') 'Consult the README file for additional information.'
-      stop
-   end if
-   
-   ! initialize logfile   
-   call out_start
+   ! handle options not dealt with by the interface (e.g. all except -version, -verbose, -logfile)
+   if (opt('-parameterfile')) para%parameterfile = trim(opt_val)
+   if (opt('-simulation')) para%simulation = trim(opt_val)
    
    ! load parameters
-   call load_parameters(forced_snapshot)
+   call load_parameters
+   
+   ! overwrite default snapshot, if requested by user
+   if (opt('-snapshot')) read(opt_val,*) para%snapshot
 
    ! TASKS
    select case (trim(task_name))
@@ -83,6 +52,7 @@ program surfsuite
       call task_makehalos
    case ('getparticle')
       call require_task_value(.true.)
+      call require_no_options_left
       call task_getparticle
    case ('gethalo')
       call require_task_value(.true.)
@@ -96,5 +66,8 @@ program surfsuite
    case default
       call error('"'//trim(task_name)//'" is an unknown task.')
    end select
+   
+   ! finalize output on screen/logfile
+   call interface_stop
     
 end program surfsuite

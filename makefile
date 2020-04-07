@@ -56,10 +56,10 @@ PROGRAMS = surfsuite
 # "make" builds all
 all: $(PROGRAMS)
 
-surfsuite.o:   module_taskhandler.o \
+surfsuite.o:   module_interface.o \
+               module_hdf5.o \
                module_global.o \
                module_system.o \
-               module_hdf5.o \
                module_io.o \
                module_sortparticles.o \
                module_getparticle.o \
@@ -68,10 +68,10 @@ surfsuite.o:   module_taskhandler.o \
                module_gethalo.o \
                module_trackhalo.o \
                module_showhalo.o
-surfsuite: 	   module_taskhandler.o \
+surfsuite: 	   module_interface.o \
+               module_hdf5.o \
                module_global.o \
                module_system.o \
-               module_hdf5.o \
                module_io.o \
                module_sortparticles.o \
                module_getparticle.o \

@@ -1,6 +1,6 @@
 module module_processhalo
 
-use module_taskhandler
+use module_interface
 use module_global
 use module_system
 
@@ -22,7 +22,7 @@ subroutine center_particles(shift1,shift2)
       h = para%L/2
       if (maxval(p%x(d))-minval(p%x(d))>h) then
          p%x(d) = mod(p%x(d)+h,para%L)
-         if (maxval(p%x(d))-minval(p%x(d))>h) call error('ERROR: Halo larger than half the simulation box.')
+         if (maxval(p%x(d))-minval(p%x(d))>h) call error('halo larger than half the simulation box.')
          if (present(shift1)) shift1(d)=h
       end if
 
