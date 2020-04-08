@@ -1,25 +1,10 @@
 module module_io
 
 use shared_module_interface
+use shared_module_system
 use module_global
-use module_system
 
 contains
-
-function exists(filename,do_not_stop) result(res)
-   implicit none
-   character(len=*),intent(in)   :: filename
-   logical,intent(in),optional   :: do_not_stop
-   logical                       :: res
-   inquire(file=trim(filename), exist=res)
-   if ((.not.res).and.(.not.present(do_not_stop))) call error('File does not exist: '//trim(filename))
-end function exists
-
-subroutine check_exists(filename)
-   implicit none
-   character(*),intent(in) :: filename
-   if (.not.exists(filename)) stop
-end subroutine check_exists
 
 function snfile(sn) result(fn)
 
@@ -64,7 +49,7 @@ function filename(index,part1,part2,part3,multi) result(fn)
          fn = trim(filebase)
       end if
    else
-      if (exists(trim(filebase)//'.0',.true.).or.(index>0)) then
+      if (exists(trim(filebase)//'.0').or.(index>0)) then
          fn = trim(filebasedot)
       else
          fn = trim(filebase)
@@ -85,16 +70,12 @@ function get_number_of_subfiles(filebase) result(nfiles)
    integer*4               :: i,nfiles
    
    ! determine if the snapshot is stored in one or multiple files
-   inquire(file=trim(filename(0,filebase,multi=.false.)),exist=single_file_exists)
-   inquire(file=trim(filename(0,filebase,multi=.true.)),exist=multiple_file_exists)
+   single_file_exists = exists(trim(filename(0,filebase,multi=.false.)))
+   multiple_file_exists = exists(trim(filename(0,filebase,multi=.true.)))
    if ((.not.single_file_exists).and.(.not.multiple_file_exists)) then
-      call out('ERROR: Could not find any files for the base')
-      call out(trim(filebase))
-      stop
+      call error('could not find any files for the base '//trim(filebase))
    else if (single_file_exists.and.multiple_file_exists) then
-      call out('ERROR: Ambiguous, since single and multiple files exist for the base')
-      call out(trim(filebase))
-      stop
+      call error('ambiguous, since single and multiple files exist for the base '//trim(filebase))
    else if (single_file_exists) then
       nfiles = 1
    else
@@ -105,11 +86,7 @@ function get_number_of_subfiles(filebase) result(nfiles)
          if (.not.multiple_file_exists) exit
          i = i+1
       end do
-      if (i==1) then
-         call out('ERROR: There is only one sub-file in the base')
-         call out(trim(filebase))
-         stop
-      end if
+      if (i==1) call error('there is only one sub-file in the base '//trim(filebase))
       nfiles = i
    end if
    
@@ -128,7 +105,7 @@ subroutine load_parameters
    logical                    :: simulation_exists
    integer*4                  :: status
    
-   call check_exists(para%parameterfile)
+   call checkfile(para%parameterfile)
    
    parameter_written = .false.
    current = ''
@@ -196,17 +173,15 @@ subroutine load_parameters
    end do
    
    ! check paths and files
-   if (.not.exists(para%path_gadget,.false.)) then
+   if (.not.exists(para%path_gadget)) then
       call out('ERROR: Could not find directory specified by path_gadget:')
       call out(trim(para%path_gadget))
       call out('Consider specifying a different simulation using "-simulation" or')
       call out('changing the paths in the parameter file.')
       stop
    end if
-   if (.not.exists(para%file_scalefactors,.false.)) then
-      call out('ERROR: Could not find file specified by file_scalefactors:')
-      call out(trim(para%file_scalefactors))
-      stop
+   if (.not.exists(para%file_scalefactors)) then
+      call error('could not find file specified by file_scalefactors: '//trim(para%file_scalefactors))
    else
       call load_scalefactors
    end if
@@ -218,15 +193,11 @@ subroutine load_parameters
    ! make paths, if not already existing
    status = system('mkdir -p '//trim(para%path_surfsuite))
    if (status.ne.0) then
-      call out('ERROR: You do not have read/write permissions to the path specified by path_surfsuite:')
-      call out(trim(para%path_surfsuite))
-      stop
+      call error('you do not have read/write permissions to the path specified by path_surfsuite: '//trim(para%path_surfsuite))
    end if
    status = system('mkdir -p '//trim(para%path_analysis))
    if (status.ne.0) then
-      call out('ERROR: You do not have read/write permissions to the path specified by path_analysis:')
-      call out(trim(para%path_analysis))
-      stop
+      call error('you do not have read/write permissions to the path specified by path_analysis: '//trim(para%path_analysis))
    end if
    
    contains
@@ -328,7 +299,7 @@ subroutine load_particles_sorted_format(index)
    
    if (nparticles>0) then
    
-      call out('Number of particles:',nparticles)
+      call out('Number of particles: ',nparticles)
       if (allocated(p)) deallocate(p)
       allocate(p(nparticles))
       open(1,file=trim(fn),action='read',form='unformatted',status='old',access='stream')

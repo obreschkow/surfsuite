@@ -1,7 +1,7 @@
 program surfsuite
 
    use shared_module_interface
-   use module_system
+   use shared_module_conversion
    use module_io
    use module_sortparticles
    use module_getparticle
@@ -11,61 +11,43 @@ program surfsuite
    use module_trackhalo
 
    implicit none
-
-   ! Change default options
-   para%parameterfile = 'parameters.txt'
-   para%simulation = ''
    
    ! start user interface
    call set_version_text('This is surfsuite version '//trim(version)//'.')
    call interface_start
    call require_task(.true.) ! this is to say that the programm always requires a task (unless the option is -version/-v)
    
-   ! handle options not dealt with by the interface (e.g. all except -version, -verbose, -logfile)
-   if (opt('-parameterfile')) para%parameterfile = trim(opt_val)
-   if (opt('-simulation')) para%simulation = trim(opt_val)
+   ! handle general options
+   call get_option_value(para%parameterfile,'-parameterfile','parameters.txt')
+   call get_option_value(para%simulation,'-simulation','')
    
    ! load parameters
    call load_parameters
    
-   ! overwrite default snapshot, if requested by user
-   if (opt('-snapshot')) read(opt_val,*) para%snapshot
-
-   ! TASKS
-   select case (trim(task_name))
-   case ('simulation')
-      call require_task_value(.false.)
-      call require_no_options_left
+   ! overwrite default snapshot, if option -snapshot given
+   call get_option_value(para%snapshot,'-snapshot')
+   
+   ! run tasks
+   if (istask('simulation',require_value=.false.,require_options=.false.)) then
       call task_getgadgetproperties
-   case ('sortparticles')
-      call require_task_value(.false.)
-      call require_no_options_left
+   else if (istask('sortparticles',.false.,.false.)) then
       call task_sortparticles
-   case ('makehalos')
-      call require_task_value(.false.)
-      call require_no_options_left
+   else if (istask('makehalos',.false.,.false.)) then
       call task_makehalos
-   case ('makeall')
-      call require_task_value(.false.)
-      call require_no_options_left
+   else if (istask('makeall',.false.,.false.)) then
       call task_sortparticles
       call task_makehalos
-   case ('getparticle')
-      call require_task_value(.true.)
-      call require_no_options_left
+   else if (istask('getparticle',.true.,.false.)) then
       call task_getparticle
-   case ('gethalo')
-      call require_task_value(.true.)
+   else if (istask('gethalo',.true.)) then
       call task_gethalo
-   case ('showhalo')
-      call require_task_value(.true.)
+   else if (istask('showhalo',.true.)) then
       call task_showhalo
-   case ('trackhalo')
-      call require_task_value(.true.)
+   else if (istask('trackhalo',.true.)) then
       call task_trackhalo
-   case default
-      call error('"'//trim(task_name)//'" is an unknown task.')
-   end select
+   else
+      call unknown_task
+   end if
    
    ! finalize output on screen/logfile
    call interface_stop

@@ -25,6 +25,7 @@ v0.20 16/03/2020: added scale factors to tracking outputs
 v0.21 23/03/2020: additional error messages
 v0.22 01/04/2020: fixed documentation, centered velocities in showhalo
 v0.23 07/04/2020: uses new module module_interface to facilitate user interface
+v0.24 08/04/2020: heavily restructured code using shared modules
 
 Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
 

@@ -1,9 +1,10 @@
 module module_gethalo
 
+   use shared_module_system
+   use shared_module_conversion
    use shared_module_interface
    use shared_module_hdf5
    use module_global
-   use module_system
    use module_io
    use module_processhalo
 
@@ -20,43 +21,33 @@ subroutine task_gethalo
 
    implicit none
    integer*4                  :: haloid
-   character(len=255)         :: outputfile = ''
+   character(len=255)         :: outputfile
    integer*4                  :: outputformat ! 1=binary, 2=ascii, 3=hdf5
-   integer*4                  :: subhalos,center
+   logical                    :: subhalos,center
    type(type_halo)            :: halo
    
-   read(task_value,*) haloid
-   
-   ! default options
-   outputformat = 1
-   subhalos = 0
-   center = 0
-   
+   call get_task_value(haloid)
+      
    ! handle options
-   if (opt('-outputfile')) outputfile = trim(opt_val)
-   if (opt('-outputformat')) read(opt_val,*) outputformat
-   if (opt('-subhalos')) read(opt_val,*) subhalos
-   if (opt('-center')) read(opt_val,*) center
+   call get_option_value(outputfile,'-outputfile','')
+   call get_option_value(outputformat,'-outputformat',1,min=1,max=3)
+   call get_option_value(subhalos,'-subhalos',.false.)
+   call get_option_value(center,'-center',.false.)
    call require_no_options_left
-   
-   ! check inputs
-   if ((outputformat<1).or.(outputformat>3)) call error('outputformat must be 1, 2 or 3.')
-   if ((subhalos<0).or.(subhalos>1)) call error('subhalos must be 0 or 1.')
-   if ((center<0).or.(center>1)) call error('center must be 0 or 1.')
    
    ! load halo
    call load_halo_properties(haloid,halo)
-   call load_halo_particles(haloid,subhalos==1)
-   if (center==1) call center_particles
+   call load_halo_particles(haloid,subhalos)
+   if (center) call center_particles
    
    ! write/save halo
-   if (trim(outputfile).ne.'') then
-      call save_halo(outputfile,outputformat,haloid,halo)
-   else
+   if (isempty(outputfile)) then
       call hline
       call write_halo_properties(haloid,halo)
       call write_halo_particle_stats
       call hline
+   else
+      call save_halo(outputfile,outputformat,haloid,halo)
    end if
    
 end subroutine task_gethalo
@@ -66,11 +57,9 @@ integer*4 function nhalos()
    implicit none
    character(len=255)   :: fn
    integer*8            :: filesize
-   logical              :: file_exists
     
    fn = trim(para%path_surfsuite)//trim(snfile(para%snapshot))//trim(para%ext_halolist)
-   inquire(file=trim(fn),exist=file_exists)
-   if (.not.file_exists) call error('could not find file'//trim(fn))
+   call checkfile(fn)
    inquire(file=trim(fn),size=filesize)
    nhalos = int(filesize/int(bytes_per_halo,8),4)
 
@@ -180,7 +169,6 @@ subroutine save_halo(outputfile,outputformat,haloid,halo)
    integer*4,intent(in)          :: haloid
    type(type_halo),intent(in)    :: halo
    integer*8                     :: i
-   integer*4                     :: sub
    
    if (outputformat==3) then
    
@@ -220,12 +208,8 @@ subroutine save_halo(outputfile,outputformat,haloid,halo)
       call hdf5_write_data('halo/file',halo%file,'surfsuite file number')
       call hdf5_write_data('halo/n_particles_main',halo%npart,'number of particles in main halo')
       call hdf5_write_data('halo/n_particles',nparticles,'number of particles in file')
-      if (nparticles==halo%npart) then
-         sub = 0
-      else
-         sub = 1
-      end if
-      call hdf5_write_data('halo/includes_subhalos',sub,'logical flag (0/1 = subhalo particles are included/excluded)')
+      call hdf5_write_data('halo/includes_subhalos',log2int(nparticles.ne.halo%npart), &
+      & 'logical flag (0/1 = subhalo particles are excluded/included)')
       
       ! Group "particles"
       call hdf5_add_group('particles')
@@ -249,29 +233,17 @@ subroutine write_halo_properties(haloid,halo)
    implicit none
    integer*4,intent(in)                   :: haloid
    type(type_halo),intent(in)             :: halo
-   character(len=255)                     :: txt
-   write(txt,'(A,A)')  'Simulation:    ',trim(para%simulation)
-   call out(txt)
-   write(txt,'(A,I0)') 'Snapshot:      ',para%snapshot
-   call out(txt)
-   write(txt,'(A,I0)') 'Halo:          ',haloid
-   call out(txt)
-   write(txt,'(A,I0)') 'File:          ',halo%file
-   call out(txt)
-   write(txt,'(A,I0)') 'Offset:        ',halo%offset
-   call out(txt)
-   write(txt,'(A,I0)') 'Npart:         ',halo%npart
-   call out(txt)
-   write(txt,'(A,I0)') 'Npart sub:     ',halo%npartsub
-   call out(txt)
-   write(txt,'(A,I0)') 'Parent ID:     ',halo%parentid
-   call out(txt)
-   write(txt,'(A,I0)') 'Nchidren:      ',halo%nchildren
-   call out(txt)
-   write(txt,'(A,I0)') '1st child ID:  ',halo%firstchildid
-   call out(txt)
-   write(txt,'(A,I0)') 'Sibling ID:    ',halo%siblingid
-   call out(txt)
+   call out('Simulation:    ',trim(para%simulation))
+   call out('Snapshot:      ',para%snapshot)
+   call out('Halo:          ',haloid)
+   call out('File:          ',halo%file)
+   call out('Offset:        ',halo%offset)
+   call out('Npart:         ',halo%npart)
+   call out('Npart sub:     ',halo%npartsub)
+   call out('Parent ID:     ',halo%parentid)
+   call out('Nchidren:      ',halo%nchildren)
+   call out('1st child ID:  ',halo%firstchildid)
+   call out('Sibling ID:    ',halo%siblingid)
 end subroutine write_halo_properties
 
 subroutine write_halo_particle_stats

@@ -2,8 +2,8 @@ module module_makehalos
 
 use shared_module_interface
 use shared_module_hdf5
+use shared_module_system
 use module_global
-use module_system
 use module_io
 use module_getparticle
 
@@ -51,7 +51,7 @@ subroutine makehalolist
    
    call tic('MAKE HALO LIST WITH PARTICLE POINTERS')
    
-   call out('Number of VELOCIraptor group files:',nfiles_velociraptor*1_8)
+   call out('Number of VELOCIraptor group files: ',nfiles_velociraptor)
    
    fnbase  = trim(para%path_velociraptor)//trim(snfile(para%snapshot))//trim(para%ext_groups)
    fnbase2 = trim(para%path_velociraptor)//trim(snfile(para%snapshot))//trim(para%ext_particles)
@@ -114,8 +114,8 @@ subroutine makehalolist
    
    call complete_families
    
-   call out('Total number of halos:',nhalos_tot*1_8)
-   call out('Total number of particles in halos:',npart_tot)
+   call out('Total number of halos: ',nhalos_tot)
+   call out('Total number of particles in halos: ',npart_tot)
    
    call toc
    
@@ -200,10 +200,8 @@ subroutine makehalos
    positionold = -1
    do ifile = 0,nfiles_sorted_particles-1
       fn = trim(filename(ifile,para%path_surfsuite,snfile(para%snapshot),para%ext_sorted))
-      if (exists(trim(fn))) then
-         open(ifile+1000,file=trim(fn), &
-         & action='read',form='unformatted',status='old',access='stream')
-      end if
+      call checkfile(fn)
+      open(ifile+1000,file=trim(fn), action='read',form='unformatted',status='old',access='stream')
    end do
    
    n = 0
@@ -213,7 +211,7 @@ subroutine makehalos
       
       ! read particles IDs
       fn = filename(i,fnbase)
-      call out('Load file '//trim(fn))
+      call out('Load file ',trim(fn))
       call hdf5_open(trim(fn))
       call hdf5_read_data('Num_of_particles_in_groups',npart_file,.true.)
       if (npart_file==huge(npart_file)) call error('number of particles in file too large.')
@@ -224,7 +222,7 @@ subroutine makehalos
       n = n+npart_file
       
       fn = filename(i,para%path_surfsuite,snfile(para%snapshot),para%ext_halos,multi=nfiles_velociraptor>1)
-      call out('Write file '//trim(fn))
+      call out('Write file ',trim(fn))
       open(1,file=trim(fn),action='write',form='unformatted',status='replace',access='stream')
       do j = 1,size(array)
          ifile = int((array(j)-1)/nparticles_per_sorted_file,4)
@@ -252,7 +250,7 @@ subroutine makehalos
       close(ifile)
    end do
    
-   call out('Total number of particles in halos:',n*1_8)
+   call out('Total number of particles in halos: ',n)
    call hline
 
 end subroutine makehalos

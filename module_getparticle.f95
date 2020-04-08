@@ -1,8 +1,8 @@
 module module_getparticle
 
 use shared_module_interface
+use shared_module_system
 use module_global
-use module_system
 use module_io
 
 implicit none
@@ -14,7 +14,7 @@ subroutine task_getparticle
    implicit none
    integer*8            :: particleid
    
-   read(task_value,*) particleid
+   call get_task_value(particleid)
    call write_particle(particleid)
    
 end subroutine task_getparticle
@@ -29,14 +29,10 @@ subroutine write_particle(id)
    
    call get_particle(id,particle,ifile)
    call hline
-   write(txt,'(A,A)')  'Simulation:  ',trim(para%simulation)
-   call out(txt)
-   write(txt,'(A,I0)') 'Particle:    ',particle%id
-   call out(txt)
-   write(txt,'(A,I0)') 'Species:     ',particle%species
-   call out(txt)
-   write(txt,'(A,I0)') 'File #:      ',ifile
-   call out(txt)
+   call out('Simulation:  ',trim(para%simulation))
+   call out('Particle:    ',particle%id)
+   call out('Species:     ',particle%species)
+   call out('File #:      ',ifile)
    write(txt,'(A,F11.4,A,F11.4,A,F11.4)') 'Position: ',particle%x(1),',',particle%x(2),',',particle%x(3)
    call out(txt)
    write(txt,'(A,F11.4,A,F11.4,A,F11.4)') 'Velocity: ',particle%v(1),',',particle%v(2),',',particle%v(3)
@@ -62,9 +58,9 @@ subroutine get_particle(id,particle,ifile)
    
    fn = trim(filename(ifile,para%path_surfsuite,snfile(para%snapshot),para%ext_sorted))
    
-   if (.not.exists(trim(fn),.true.)) then
+   if (.not.exists(fn)) then
       fn = trim(filename(0,para%path_surfsuite,snfile(para%snapshot),para%ext_sorted))
-      if (.not.exists(trim(fn),.true.)) then
+      if (.not.exists(fn)) then
          call error('Sorted particle files do not exist for this simulation. Consider running the task "sortparticles".')
       else
          call error('Particle ID outside allowed range or file lost.')

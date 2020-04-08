@@ -1,8 +1,8 @@
 module module_processhalo
 
 use shared_module_interface
+use shared_module_system
 use module_global
-use module_system
 
 contains
 

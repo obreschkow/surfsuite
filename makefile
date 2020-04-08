@@ -56,10 +56,12 @@ PROGRAMS = surfsuite
 # "make" builds all
 all: $(PROGRAMS)
 
-surfsuite.o:   shared_module_interface.o \
+surfsuite.o:   shared_module_system.o \
+               shared_module_conversion.o \
+               shared_module_interface.o \
                shared_module_hdf5.o \
+               shared_module_graphics.o \
                module_global.o \
-               module_system.o \
                module_io.o \
                module_sortparticles.o \
                module_getparticle.o \
@@ -68,10 +70,12 @@ surfsuite.o:   shared_module_interface.o \
                module_gethalo.o \
                module_trackhalo.o \
                module_showhalo.o
-surfsuite: 	   shared_module_interface.o \
+surfsuite: 	   shared_module_conversion.o \
+               shared_module_system.o \
+               shared_module_interface.o \
                shared_module_hdf5.o \
+               shared_module_graphics.o \
                module_global.o \
-               module_system.o \
                module_io.o \
                module_sortparticles.o \
                module_getparticle.o \

@@ -1,8 +1,9 @@
 module module_showhalo
 
    use shared_module_interface
+   use shared_module_system
+   use shared_module_graphics
    use module_global
-   use module_system
    use module_io
    use module_gethalo
    use module_trackhalo
@@ -33,66 +34,47 @@ subroutine task_showhalo
    implicit none
    
    integer*4                  :: haloid
-   logical                    :: output
    character(len=255)         :: outputfile
-   integer*4                  :: subhalos,at
+   logical                    :: subhalos
+   integer*4                  :: at
    
-   read(task_value,*) haloid
-   
-   ! default options
-   output = .false.
-   subhalos = 0
-   at = para%snapshot
-   graph%mode = 0
-   graph%npixels = 800
-   graph%sidelength = 2
-   graph%smoothinglength = 0.02
-   graph%gamma = 0.6
-   graph%lum = 1
-   graph%projection = 1
+   call get_task_value(haloid)
    
    ! handle options
-   if (opt('-outputfile')) outputfile = trim(opt_val)
-   if (opt('-subhalos')) read(opt_val,*) subhalos
-   if (opt('-at')) read(opt_val,*) at
-   if (opt('-mode')) read(opt_val,*) graph%mode
-   if (opt('-npixels')) read(opt_val,*) graph%npixels
-   if (opt('-sidelength')) read(opt_val,*) graph%sidelength
-   if (opt('-smoothinglength')) read(opt_val,*) graph%smoothinglength
-   if (opt('-lum')) read(opt_val,*) graph%lum
-   if (opt('-gamma')) read(opt_val,*) graph%gamma
-   if (opt('-projection')) read(opt_val,*) graph%projection
+   call get_option_value(outputfile,'-outputfile','')
+   call get_option_value(subhalos,'-subhalos',.false.)
+   call get_option_value(at,'-at',para%snapshot,min=0)
+   call get_option_value(graph%mode,'-mode',0,min=0,max=2)
+   call get_option_value(graph%npixels,'-npixels',800,min=1,max=4000) 
+   call get_option_value(graph%sidelength,'-sidelength',2.0,min=0.0) 
+   call get_option_value(graph%smoothinglength,'-smoothinglength',0.02,min=0.0) 
+   call get_option_value(graph%lum,'-lum',1.0,min=0.0) 
+   call get_option_value(graph%gamma,'-gamma',0.6,min=0.0) 
+   call get_option_value(graph%projection,'-projection',1,min=1,max=3) 
    call require_no_options_left
    
-   ! checks
-   if ((subhalos<0).or.(subhalos>1)) call error('subhalos must be 0 or 1.')
-   if (at<0) call error('"at" must be a snapshot index >=0.')
-   if ((graph%mode<0).or.(graph%mode>2)) call error('mode must be 0, 1 or 2.')
-   if (graph%npixels<=0) call error('npixels must be a positive integer.')
-   if (graph%sidelength<=0.0) call error('sidelength must be a positive real.')
-   if (graph%smoothinglength<=0.0) call error('smoothinglength must be a positive real.')
-   if (graph%lum<=0.0) call error('lum must be a positive real.')
-   if (graph%gamma<=0.0) call error('gamma must be a positive real.')
-   if ((graph%projection<1).or.(graph%projection>3)) call error('projection must be 1, 2 or 3.')
+   ! additional checks
    if ((graph%mode==1).and.(graph%smoothinglength>=graph%sidelength)) call error('smoothinglength must be smaller than sidelength')
    
-   call load_halo_particles(haloid,subhalos==1)
+   call load_halo_particles(haloid,subhalos)
    
    if (at==para%snapshot) then
-      call load_halo_particles(haloid,subhalos==1)
+      call load_halo_particles(haloid,subhalos)
    else
-      call load_halo_particles_at_different_snapshot(haloid,subhalos==1,at)
+      call load_halo_particles_at_different_snapshot(haloid,subhalos,at)
    end if
    
    call center_particles
    call center_velocities
+   
+   call out('Render halo ',haloid)
    call raster_halo
    
-   if (output) then
-      call raster_to_bitmap(rgb,outputfile)
-   else
-      call raster_to_bitmap(rgb,'.tmp.bmp')
+   if (isempty(outputfile)) then
+      call raster2bitmap(rgb,'.tmp.bmp')
       call system('open .tmp.bmp')
+   else
+      call raster2bitmap(rgb,outputfile)
    end if
 
 end subroutine task_showhalo
@@ -253,45 +235,5 @@ subroutine raster_halo
    where (rgb>1) rgb = 1
    
 end subroutine raster_halo
-
-subroutine raster_to_bitmap(rgb,filename)
-
-   ! converts rgb(1:height,1:width,1:3) [0...1] to a 24-bit bitmap file
-
-   implicit none
-   character(*),intent(in) :: filename
-   real*4,intent(in)       :: rgb(:,:,:)
-   integer*4               :: width,height
-   integer*4               :: extrabytes
-   integer*4               :: paddedsize
-   integer*4               :: i,j,k
-   
-   height = size(rgb,1)
-   width = size(rgb,2)
-   extrabytes = 4-modulo(width*3,4) ! number of bytes of padding to add to each horizontal line
-   if (extrabytes == 4) extrabytes = 0
-   paddedsize = ((width*3)+extrabytes)*height
-
-   open(1,file=trim(filename),action='write',form='unformatted',status='replace',access='stream')
-   
-   ! write header
-   write(1) 'BM',paddedsize+54,0,54 ! BMP header
-   write(1) 40,width,height,achar(1),achar(0),achar(24),achar(0),0,paddedsize,2835,2835,0,0 ! DIB header
-   
-   ! write array
-   do j = 1,width
-      do i = 1,height
-         do k = 3,1,-1
-            write(1) achar(nint(rgb(i,j,k)*255))
-         end do
-      end do
-      do i = 1,extrabytes
-         write(1) achar(0)
-      end do
-   end do
-   
-   close(1)
-
-end subroutine raster_to_bitmap
 
 end module module_showhalo

@@ -1,9 +1,10 @@
 module module_trackhalo
 
+use shared_module_system
+use shared_module_conversion
 use shared_module_interface
 use shared_module_hdf5
 use module_global
-use module_system
 use module_io
 use module_gethalo
 use module_processhalo
@@ -21,30 +22,26 @@ subroutine task_trackhalo
    implicit none
    
    integer*4               :: haloid
-   integer*4               :: subhalos = 0
-   integer*4               :: center = 1
-   integer*4               :: snapshot_max = -1
-   integer*4               :: snapshot_min = -1
-   character(len=255)      :: outputfile = ''
+   integer*4               :: snapshot_max
+   integer*4               :: snapshot_min
+   character(len=255)      :: outputfile
+   logical                 :: subhalos,center
    real*4,allocatable      :: x(:,:,:)
    real*4,allocatable      :: v(:,:,:)
    type(type_halo)         :: halo
-   character(len=20)        :: idstr
+   character(len=20)       :: idstr
    
-   read(task_value,*) haloid
+   call get_task_value(haloid)
    
    ! handle options
-   if (opt('-outputfile',required=.true.)) outputfile = trim(opt_val)
-   if (opt('-from',required=.true.)) read(opt_val,*) snapshot_min
-   if (opt('-to',required=.true.)) read(opt_val,*) snapshot_max
-   if (opt('-subhalos')) read(opt_val,*) subhalos
-   if (opt('-center')) read(opt_val,*) center
+   call get_option_value(outputfile,'-outputfile','',required=.true.)
+   call get_option_value(snapshot_min,'-from',0,min=0,required=.true.)
+   call get_option_value(snapshot_max,'-to',0,min=0,required=.true.)
+   call get_option_value(subhalos,'-subhalos',.false.)
+   call get_option_value(center,'-center',.true.)
    call require_no_options_left
    
-   if (snapshot_min<0) call error('argument of -from must be >=0.')
-   if (snapshot_max<0) call error('argument of -to must be >=0.')
-   if ((subhalos<0).or.(subhalos>1)) call error('subhalos must be 0 or 1.')
-   if ((center<0).or.(center>1)) call error('center must be 0 or 1.')
+   ! additional checks
    if (snapshot_min>snapshot_max) call error('snapshot index "from" must be lower or equal than snapshot index "to".')
    if (snapshot_min<lbound(scalefactor,1)) call error('snapshot -from is too low compared to the scale factor file.')
    if (snapshot_max>ubound(scalefactor,1)) call error('snapshot -to is too high compared to the scale factor file.')
@@ -52,7 +49,7 @@ subroutine task_trackhalo
    write(idstr,*) haloid
    call tic('TRACK EVOLUTION OF HALO '//trim(idstr))
    call load_halo_properties(haloid,halo)
-   call load_halo_evolving_particles(haloid,subhalos==1,center==1,snapshot_min,snapshot_max,x,v)
+   call load_halo_evolving_particles(haloid,subhalos,center,snapshot_min,snapshot_max,x,v)
    call save_evolving_particles
    call toc
    
@@ -61,7 +58,7 @@ subroutine task_trackhalo
    subroutine save_evolving_particles
 
       implicit none
-      integer*4            :: sub,sn
+      integer*4            :: sn
       character(len=255)   :: snstr
    
       call hdf5_create(trim(outputfile)) ! create HDF5 file
@@ -88,18 +85,14 @@ subroutine task_trackhalo
       call hdf5_write_data('halo/file',halo%file,'surfsuite file number')
       call hdf5_write_data('halo/n_particles_main',halo%npart,'number of particles in main halo')
       call hdf5_write_data('halo/n_particles',nparticles,'number of particles in file')
-      if (nparticles==halo%npart) then
-         sub = 0
-      else
-         sub = 1
-      end if
-      call hdf5_write_data('halo/includes_subhalos',sub,'logical flag (0/1 = subhalo particles are included/excluded)')
+      call hdf5_write_data('halo/includes_subhalos',log2int(nparticles.ne.halo%npart), &
+      & 'logical flag (0/1 = subhalo particles are excluded/included)')
        
       ! Group "tracking"
       call hdf5_add_group('tracking')
       call hdf5_write_data('tracking/snapshot_min',snapshot_min,'minimal snapshot index of track')
       call hdf5_write_data('tracking/snapshot_max',snapshot_max,'maximal snapshot index of track')
-      call hdf5_write_data('tracking/center',center, & 
+      call hdf5_write_data('tracking/center',log2int(center), & 
       & 'logical flag specifying if positions and velocities are centered to main snapshot (0=false, 1=true)')
    
       ! Group "particles"
@@ -174,7 +167,7 @@ subroutine load_halo_evolving_particles(haloid,include_subhalos,center,snapshot_
    ! retrieve particle information
    do sn = snapshot_min,snapshot_max
    
-      call out('Process '//trim(snfile(sn)))
+      call out('Process ',trim(snfile(sn)))
 
       ifileold = -1
 
@@ -185,8 +178,8 @@ subroutine load_halo_evolving_particles(haloid,include_subhalos,center,snapshot_
          if (ifile(j).ne.ifileold) then
             close(1)
             fn = trim(filename(ifile(j),para%path_surfsuite,trim(snfile(sn)),para%ext_sorted))
-            if (exists(fn)) open(1,file=trim(fn), &
-            & action='read',form='unformatted',status='old',access='stream')
+            call checkfile(fn)
+            open(1,file=trim(fn), action='read',form='unformatted',status='old',access='stream')
             ifileold = ifile(j)
          end if
       

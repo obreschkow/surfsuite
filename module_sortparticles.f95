@@ -1,8 +1,8 @@
 module module_sortparticles
 
 use shared_module_interface
+use shared_module_system
 use module_global
-use module_system
 use module_io
 
 private 
@@ -78,7 +78,7 @@ subroutine split_particles_into_sort_files
    ! variable declaration
    implicit none
    integer*8,parameter  :: nchunk_max = 10000000_8
-   character(len=255)   :: fn,str
+   character(len=255)   :: fn
    integer*4            :: np(6)
    integer*4            :: ifile_sorted,ifile_gadget
    integer*8            :: position
@@ -120,13 +120,13 @@ subroutine split_particles_into_sort_files
       fn = filename(ifile_gadget,para%path_gadget,snfile(para%snapshot))
       
       call tic('SPLIT GADGET FILE INTO SORTABLE FILES')
-      call out('Filename: '//trim(fn))
+      call out('Filename: ',trim(fn))
    
       ! read header
       open(1,file=trim(fn),action='read',form='unformatted',status='old',access='stream')
       read(1,pos=5) np
       nparticles = sum(np)
-      call out('Number of particles:',nparticles)
+      call out('Number of particles: ',nparticles)
       
       iparticles = 0
       
@@ -176,8 +176,7 @@ subroutine split_particles_into_sort_files
                iparticles_tot = iparticles_tot+nchunk
                
                ! progress report
-               write(str,'(A,F5.1,A)') 'Progress: ',real(iparticles)/real(nparticles)*100,'%'
-               call out(trim(str))
+               call progress(real(iparticles)/real(nparticles))
                
             end do
             
@@ -186,11 +185,6 @@ subroutine split_particles_into_sort_files
       end do
    
       close(1)
-      
-      ! progress report
-      write(str,'(A,F5.1,A)') 'Progress: ',100.0,'%'
-      call out(trim(str))
-      
       call toc
       
    end do
@@ -219,27 +213,25 @@ subroutine task_getgadgetproperties
    integer*4            :: i,extra
    integer*4            :: np(6),box
    integer*8            :: np_tot(6)
-   logical              :: file_exists
    character(len=255)   :: txt
    
    call hline
    
    call out('SUMMARY OF CURRENT SIMULAITON DATA')
    
-   call out('Simulation: '//trim(para%simulation))
+   call out('Simulation: ',trim(para%simulation))
    
-   call out('Snapshot: ',int(para%snapshot,8))
+   call out('Snapshot: ',para%snapshot)
    
    nfiles_gadget_unsorted = get_number_of_subfiles(trim(para%path_gadget)//trim(snfile(para%snapshot)))
-   call out('Number of Gadget files for this snapshot:',nfiles_gadget_unsorted*1_8)
+   call out('Number of Gadget files for this snapshot: ',nfiles_gadget_unsorted)
    
    ! compute number of particles & check file sizes
    nparticles_tot = 0
    np_tot = 0
    do i = 0,nfiles_gadget_unsorted-1
       fn = filename(i,para%path_gadget,snfile(para%snapshot))
-      inquire(file=trim(fn),exist=file_exists)
-      if (.not.file_exists) call error('File does not exist '//trim(fn))
+      call checkfile(fn)
       open(1,file=trim(fn),action='read',form='unformatted',status='old')
       read(1) np
       close(1)
