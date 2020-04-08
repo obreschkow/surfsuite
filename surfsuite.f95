@@ -14,8 +14,7 @@ program surfsuite
    
    ! start user interface
    call set_version_text('This is surfsuite version '//trim(version)//'.')
-   call interface_start
-   call require_task(.true.) ! this is to say that the programm always requires a task (unless the option is -version/-v)
+   call interface_start(require_task=.true.)
    
    ! handle general options
    call get_option_value(para%parameterfile,'-parameterfile','parameters.txt')

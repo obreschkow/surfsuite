@@ -16,7 +16,6 @@ module shared_module_interface
    public   :: set_version_text ! sets text to be displayed when version is requested (e.g. using -version)
    public   :: interface_start ! analyses arguments, initialises screen/logfile output
    public   :: interface_stop ! finalises screen/logfile output
-   public   :: require_task ! ensures that a task does or does not exist (depending on arguemnt)
    public   :: istask ! logical function checking if the task_name is equal to the argument; can also check existence of task_value and options
    public   :: get_task_value ! subroutine returning the task value (as output argument, not as a function)
    public   :: get_option_value ! function returning option value (see function description for further details)
@@ -36,10 +35,8 @@ module shared_module_interface
    public   :: checkfile ! check if file exists; if not, produce error message and stop
    
    ! less frequently used
-   public   :: task_exists ! read-only logical flag specifying if a task name is given; normally require_task is used instead
-   public   :: task_name ! read-only string of the task name; normally function istask() is used instead
+   public   :: task_exists ! read-only logical flag specifying if a task name is given; normally the require_task argument in interface_start is used
    public   :: task_has_value ! read-only logical flag specifying if the task has a value; normally this is checked with istask()
-   public   :: task_value
    public   :: noptions ! read-only integer giving the number of optional arguments provided by the user
    public   :: verbose ! read-only logical flag specifying if an output is displayed on screen/logfile; normally specified using -verbose
    public   :: set_verbose ! routine to set verbose programmatically
@@ -91,11 +88,12 @@ contains
    
 ! master routines ***************************************************************************************************************
 
-subroutine interface_start
+subroutine interface_start(require_task)
 
    implicit none
-   integer*4         :: narg
-   character(255)    :: argument
+   integer*4                     :: narg
+   character(255)                :: argument
+   logical,intent(in),optional   :: require_task
    
    ! return version text, if the first argument is version/-version/-v/help/-help
    narg = iargc() ! get number of arguments
@@ -113,6 +111,12 @@ subroutine interface_start
    
    ! extract arguments and split into tasks and options
    call get_arguments
+   
+   ! checks if task existence
+   if (present(require_task)) then
+      if (require_task.and.(.not.task_exists)) call error('Task is missing. Consult README file for additional information.')
+      if ((.not.require_task).and.task_exists) call error('Unknown argument '//trim(task_name))
+   end if
    
    ! start output on screen/logfile, as specified by options -verbose (default 1) and -logfile (default '' = screen)
    call get_option_value(verbose,'-verbose',.true.)
@@ -417,17 +421,6 @@ subroutine get_arguments
    end if
 
 end subroutine get_arguments
-
-subroutine require_task(required)
-
-   ! checks if task_name does or does not exists, as required
-
-   implicit none
-   logical,intent(in) :: required
-   if (required.and.(.not.task_exists)) call error('Task is missing. Consult README file for additional information.')
-   if ((.not.required).and.task_exists) call error('Unknown argument '//trim(task_name))
-   
-end subroutine require_task
 
 logical function istask(name,require_value,require_options)
 
