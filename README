@@ -66,11 +66,11 @@ make system=hyades # compile code
 
 # assuming that 'makeall' has been run before by another user, you can, for example,
 # extract particle information for particle number 134 in the SURFS run L210_N1024-Hydro:
-./surfsuite getparticle 134 -simulation L210_N1024-Hydro6D-hyades
+./surfsuite getparticle 134 -parameterset L210_N1024-Hydro6D-hyades
 # NB: it may be necessary to specify the parameter file location using the option "-parameterfile"
 
 # you can also extract halo information for halo number 56 in the L210_N1024 run of SURFS
-./surfsuite gethalo 56 -simulation L210_N1024-Hydro6D-hyades
+./surfsuite gethalo 56 -parameterset L210_N1024-Hydro6D-hyades
 
 # to run a larger task, such as "sortparticles", "makehalos" and "makeall",
 # use the workload manager SLURM, see https://slurm.schedmd.com/pdfs/summary.pdf

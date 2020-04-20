@@ -242,8 +242,7 @@ subroutine task_getgadgetproperties
       if (extra<-5) then ! not 0, because 32-bytes is only true when IDs are stored as int*8, not int*4
          call error('Format of input file not recognized.')
       else if ((extra>0).and.(i==0)) then
-         call out('Warning: File contains more particle data than positions, velocities and IDs.')
-         call out('         These additional data are be ignored by surfsuite.')
+         call out('Note: Gadget file contains more data than positions, velocities and IDs; these additional data are ignored.')
       end if
          
    end do

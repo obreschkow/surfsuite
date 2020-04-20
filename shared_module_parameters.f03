@@ -148,8 +148,11 @@ subroutine handle_parameters
             do i = 2,len(trim(value))
                if (any(value(i:i)==(/' ','#'/))) then
                   value = value(1:i-1)
+                  exit
                end if
             end do
+            
+            if (isempty(value)) call error('parameterfile: the parameter "'//trim(name)//'" is empty')
             
             if (trim(name)=='parameterset') then
             
