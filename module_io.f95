@@ -126,7 +126,7 @@ subroutine load_parameters
    if (.not.exists(para%path_gadget)) then
       call out('ERROR: Could not find directory specified by path_gadget:')
       call out(trim(para%path_gadget))
-      call out('Consider specifying a different simulation using "-simulation" or')
+      call out('Consider specifying a different parameterset using "-parameterset" or')
       call out('changing the paths in the parameter file.')
       stop
    end if
