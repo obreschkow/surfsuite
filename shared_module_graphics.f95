@@ -1,4 +1,13 @@
+! **********************************************************************************************************************************
+! Shared Fortran module with graphics routines
+! Developed by Danail Obreschkow
+! **********************************************************************************************************************************
+
 module shared_module_graphics
+
+   private
+   
+   public   :: raster2bitmap  ! converts and n-m-3 rgb array into a bitmap file with basic header information
 
 contains
 

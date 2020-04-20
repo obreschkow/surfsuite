@@ -1,8 +1,8 @@
 module module_makehalos
 
-use shared_module_interface
+use shared_module_core
+use shared_module_arguments
 use shared_module_hdf5
-use shared_module_system
 use module_global
 use module_io
 use module_getparticle
@@ -200,7 +200,7 @@ subroutine makehalos
    positionold = -1
    do ifile = 0,nfiles_sorted_particles-1
       fn = trim(filename(ifile,para%path_surfsuite,snfile(para%snapshot),para%ext_sorted))
-      call checkfile(fn)
+      call check_file(fn)
       open(ifile+1000,file=trim(fn), action='read',form='unformatted',status='old',access='stream')
    end do
    

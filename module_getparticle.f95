@@ -1,7 +1,7 @@
 module module_getparticle
 
-use shared_module_interface
-use shared_module_system
+use shared_module_core
+use shared_module_arguments
 use module_global
 use module_io
 
@@ -61,6 +61,7 @@ subroutine get_particle(id,particle,ifile)
    if (.not.exists(fn)) then
       fn = trim(filename(0,para%path_surfsuite,snfile(para%snapshot),para%ext_sorted))
       if (.not.exists(fn)) then
+         write(*,*) fn
          call error('Sorted particle files do not exist for this simulation. Consider running the task "sortparticles".')
       else
          call error('Particle ID outside allowed range or file lost.')

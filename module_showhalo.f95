@@ -1,7 +1,7 @@
 module module_showhalo
 
-   use shared_module_interface
-   use shared_module_system
+   use shared_module_core
+   use shared_module_arguments
    use shared_module_graphics
    use module_global
    use module_io

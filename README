@@ -25,7 +25,7 @@ v0.20 16/03/2020: added scale factors to tracking outputs
 v0.21 23/03/2020: additional error messages
 v0.22 01/04/2020: fixed documentation, centered velocities in showhalo
 v0.23 07/04/2020: uses new module module_interface to facilitate user interface
-v0.24 08/04/2020: heavily restructured code using shared modules
+v0.30 15/04/2020: heavily restructured code using shared modules
 
 Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
 
@@ -134,18 +134,17 @@ Optional arguments used by all routines
 
 -parameterfile (default parameters.txt): path+filename of parameter-file
 
--simulation (default set in parameter-file): specify the simulation name in the parameterfile. This name is used to
- specify the actual Gadget N-body simulation, as well as the VELOCIraptor run and the computing system.
- If the -simulation option is specified, the parameters listed under this particular simulation will be loaded.
- Otherwise the parameters under the first-listed "simulation" tag and the "default" tag (in this order) will be adopted.
+-parameterset (default is the first set in parameter-file): specifies the set of parameters read from the in the parameterfile.
+ If the -parameterset option is specified, the parameters listed under this particular tag will be loaded.
+ Otherwise the parameters under the first-listed parameterset and outside any parameterset will be adopted.
 
 -snapshot (default set in parameter-file): overwrites the 'snapshot' number given in parameters.txt to allow
  a quick access to a different snapshot, keeping all the other parameters identical.
 
--verbose (default 1): logical flag specifying whether surfsuite produces an output on the screen/logfile (1) or remains muted (0)
+-logfile (default none) optional filename of an ascii-file for the screen output
 
--logfile (default none) allows the user to specify a path+filename for the screen-log, which is particularly usefull
- if the code is executed using a queueing system
+-verbose (default n if logfile given, otherwise y): logical flag (y or n) specifying whether the log should be
+ displayed on the screen
 
 
 INPUT FILE FORMATS

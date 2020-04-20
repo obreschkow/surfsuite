@@ -1,7 +1,7 @@
 module module_io
 
-use shared_module_interface
-use shared_module_system
+use shared_module_core
+use shared_module_parameters
 use module_global
 
 contains
@@ -95,82 +95,32 @@ end function get_number_of_subfiles
 subroutine load_parameters
 
    implicit none
-   character(255)             :: line
-   character(50)              :: var_name
-   character(205)             :: var_value
-   character(255)             :: current
-   integer                    :: io
-   logical                    :: parameter_written(15)
-   integer*4                  :: i
-   logical                    :: simulation_exists
-   integer*4                  :: status
    
-   call checkfile(para%parameterfile)
+   call handle_parameters
    
-   parameter_written = .false.
-   current = ''
-   simulation_exists = .false.
+   call get_parameter_value(para%simulation,'simulation')
+   call get_parameter_value(para%snapshot,'snapshot')
+   call get_parameter_value(para%L,'L',min=1e-10)
+   call get_parameter_value(para%N,'N',min=1)
+   call get_parameter_value(para%path_gadget,'path_gadget')
+   call get_parameter_value(para%path_velociraptor,'path_velociraptor')
+   call get_parameter_value(para%path_surfsuite,'path_surfsuite')
+   call get_parameter_value(para%path_analysis,'path_analysis')
+   call get_parameter_value(para%ext_groups,'ext_groups')
+   call get_parameter_value(para%ext_particles,'ext_particles')
+   call get_parameter_value(para%ext_sorted,'ext_sorted')
+   call get_parameter_value(para%ext_halos,'ext_halos')
+   call get_parameter_value(para%ext_halolist,'ext_halolist')
+   call get_parameter_value(para%snapshot_fmt,'snapshot_fmt')
+   call get_parameter_value(para%snapshot_prefix,'snapshot_prefix')
+   call get_parameter_value(para%file_scalefactors,'file_scalefactors')
+   call require_no_parameters_left
    
-   open(1,file=trim(para%parameterfile),action='read',form='formatted')
-   do
-      read(1,'(A)',IOSTAT=io) line
-      if (io.ne.0) exit
-      if (.not.((len(trim(line))==0).or.(line(1:1)=='#'))) then
-         read(line,*) var_name
-         var_value = adjustl(line(len(trim(var_name))+1:len(line)))
-         select case (trim(var_name))
-            case ('default')
-               current = 'default'
-            case ('simulation')
-               if (para%simulation=='') then
-                  para%simulation = trim(var_value)
-                  simulation_exists = .true.
-               else
-                  if (para%simulation == trim(var_value)) simulation_exists = .true.
-               end if
-               current = trim(var_value)
-            case ('snapshot')
-               if (iscurrent(1)) read(var_value,*) para%snapshot
-            case ('L')
-               if (iscurrent(2)) read(var_value,*) para%L
-            case ('N')
-               if (iscurrent(3)) read(var_value,*) para%N
-            case ('path_gadget')
-               if (iscurrent(4)) para%path_gadget = trim(noslash(var_value))//'/'
-            case ('path_velociraptor')
-               if (iscurrent(5)) para%path_velociraptor = trim(noslash(var_value))//'/'
-            case ('path_surfsuite')
-               if (iscurrent(6)) para%path_surfsuite = trim(noslash(var_value))//'/'
-            case ('path_analysis')
-               if (iscurrent(7)) para%path_analysis = trim(noslash(var_value))//'/'
-            case ('ext_groups')
-               if (iscurrent(8)) para%ext_groups = trim(var_value)
-            case ('ext_particles')
-               if (iscurrent(9)) para%ext_particles = trim(var_value)
-            case ('ext_sorted')
-               if (iscurrent(10)) para%ext_sorted = trim(var_value)
-            case ('ext_halos')
-               if (iscurrent(11)) para%ext_halos = trim(var_value)
-            case ('ext_halolist')
-               if (iscurrent(12)) para%ext_halolist = trim(var_value)
-            case ('snapshot_fmt')
-               if (iscurrent(13)) para%snapshot_fmt = trim(var_value)
-            case ('snapshot_prefix')
-               if (iscurrent(14)) para%snapshot_prefix = trim(var_value)
-            case ('file_scalefactors')
-               if (iscurrent(15)) para%file_scalefactors = trim(var_value)
-            case default
-               call error(trim(var_name)//' is an unknown parameter.')
-         end select
-      end if
-   end do
-   close(1)
-   
-   ! check parameter existence
-   if (.not.simulation_exists) call error('specified simulation does not exist in parameter file.')
-   do i = 1,size(parameter_written)
-      if (.not.parameter_written(i)) call error('not all parameters specified in parameter file.')
-   end do
+   ! fix paths
+   para%path_gadget = dir(para%path_gadget,ispath=.true.)
+   para%path_velociraptor = dir(para%path_velociraptor,ispath=.true.)
+   para%path_surfsuite = dir(para%path_surfsuite,ispath=.true.)
+   para%path_analysis = dir(para%path_analysis,ispath=.true.)
    
    ! check paths and files
    if (.not.exists(para%path_gadget)) then
@@ -180,46 +130,17 @@ subroutine load_parameters
       call out('changing the paths in the parameter file.')
       stop
    end if
-   if (.not.exists(para%file_scalefactors)) then
-      call error('could not find file specified by file_scalefactors: '//trim(para%file_scalefactors))
-   else
-      call load_scalefactors
-   end if
    
-   ! check physical parameters
-   if (para%L<=0) call error('L must be a positive real.')
-   if (para%N<=0) call error('L must be a positive real.')
+   ! load scale factors
+   call load_scalefactors
    
-   ! make paths, if not already existing
-   status = system('mkdir -p '//trim(para%path_surfsuite))
-   if (status.ne.0) then
-      call error('you do not have read/write permissions to the path specified by path_surfsuite: '//trim(para%path_surfsuite))
-   end if
-   status = system('mkdir -p '//trim(para%path_analysis))
-   if (status.ne.0) then
-      call error('you do not have read/write permissions to the path specified by path_analysis: '//trim(para%path_analysis))
-   end if
+   ! make paths
+   call make_path(para%path_surfsuite)
+   call make_path(para%path_analysis)
    
-   contains
-   
-   logical function iscurrent(index)
-      implicit none
-      integer*4,intent(in) :: index
-      if (trim(current)=='') call error('parameter file must start with "simulation" or "default" statement')
-      if (trim(current)==trim(para%simulation)) then
-         parameter_written(index) = .true.
-         iscurrent = .true.
-      else if (trim(current)=='default') then
-         if (parameter_written(index)) then
-            iscurrent = .false.
-         else
-            parameter_written(index) = .true.
-            iscurrent = .true.
-         end if
-      else
-         iscurrent = .false.
-      end if
-   end function iscurrent
+   ! check permissions
+   call check_file(para%path_surfsuite,'rw')
+   call check_file(para%path_analysis,'rw')
    
 end subroutine load_parameters
 
@@ -230,6 +151,8 @@ subroutine load_scalefactors
    integer*4   :: snapshot,snapshot_min,snapshot_max,snapshot_expected
    integer*4   :: status
    real*4      :: a,aold
+   
+   call check_file(para%file_scalefactors)
    
    ! determine minimum and maximum snapshot
    snapshot_min = huge(snapshot_min)

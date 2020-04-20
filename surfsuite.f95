@@ -1,7 +1,8 @@
 program surfsuite
 
-   use shared_module_interface
-   use shared_module_conversion
+   use shared_module_core
+   use shared_module_arguments
+   use shared_module_parameters
    use module_io
    use module_sortparticles
    use module_getparticle
@@ -13,15 +14,19 @@ program surfsuite
    implicit none
    
    ! start user interface
-   call set_version_text('This is surfsuite version '//trim(version)//'.')
-   call interface_start(require_task=.true.)
+   call set_version('0.30')
+   call handle_arguments(require_task=.true.)
+   call start_output
    
    ! handle general options
    call get_option_value(para%parameterfile,'-parameterfile','parameters.txt')
-   call get_option_value(para%simulation,'-simulation','')
+   call set_parameterfile(para%parameterfile)
+   call get_option_value(para%parameterset,'-parameterset','')
+   call set_parameterset(para%parameterset)
    
    ! load parameters
    call load_parameters
+   para%parameterset = trim(parameterset)
    
    ! overwrite default snapshot, if option -snapshot given
    call get_option_value(para%snapshot,'-snapshot')
@@ -49,6 +54,6 @@ program surfsuite
    end if
    
    ! finalize output on screen/logfile
-   call interface_stop
+   call stop_output
     
 end program surfsuite

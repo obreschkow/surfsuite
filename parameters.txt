@@ -1,4 +1,5 @@
-simulation        L210_N1024-Hydro3D
+parameterset      L210_N1024-Hydro3D
+simulation        L210_N1024-Hydro
 L                 210
 N                 1024
 path_gadget       /Users/do/Data/SURFS/L210_N1024-Hydro/gadget
@@ -10,8 +11,10 @@ ext_groups        .VELOCIraptor.3dfof.catalog_groups
 ext_particles     .VELOCIraptor.3dfof.catalog_particles
 ext_halos         .3dfof.halos
 ext_halolist      .3dfof.halolist
+end
 
-simulation        L210_N1024-Hydro6D
+parameterset      L210_N1024-Hydro6D
+simulation        L210_N1024-Hydro
 L                 210
 N                 1024
 path_gadget       /Users/do/Data/SURFS/L210_N1024-Hydro/gadget
@@ -23,7 +26,9 @@ ext_groups        .VELOCIraptor.6dfof.catalog_groups
 ext_particles     .VELOCIraptor.6dfof.catalog_particles
 ext_halos         .6dfof.halos
 ext_halolist      .6dfof.halolist
+end
 
+parameterset      L210_N512
 simulation        L210_N512
 L                 210
 N                 512
@@ -32,7 +37,9 @@ path_velociraptor /Users/do/Data/SURFS/L210_N512/velociraptor
 path_surfsuite    /Users/do/Data/SURFS/L210_N512/surfsuite
 path_analysis     /Users/do/Data/SURFS/L210_N512/surfsuite/analysis
 file_scalefactors /Users/do/Data/SURFS/L210_N512/snap_scalefactors.txt
+end
 
+parameterset      L210_N1024
 simulation        L210_N1024
 L                 210
 N                 1024
@@ -41,7 +48,9 @@ path_velociraptor /Users/do/Data/SURFS/L210_N1024/velociraptor
 path_surfsuite    /Users/do/Data/SURFS/L210_N1024/surfsuite
 path_analysis     /Users/do/Data/SURFS/L210_N1024/surfsuite/analysis
 file_scalefactors /Users/do/Data/SURFS/L210_N1024/snap_scalefactors.txt
+end
 
+parameterset      L210_N1536
 simulation        L210_N1536
 L                 210
 N                 1536
@@ -50,8 +59,10 @@ path_velociraptor /Users/do/Data/SURFS/L210_N1536/velociraptor
 path_surfsuite    /Users/do/Data/SURFS/L210_N1536/surfsuite
 path_analysis     /Users/do/Data/SURFS/L210_N1536/surfsuite/analysis
 file_scalefactors /Users/do/Data/SURFS/L210_N1536/snap_scalefactors.txt
+end
 
-simulation        L210_N1024-Hydro3D-hyades
+parameterset      L210_N1024-Hydro3D-hyades
+simulation        L210_N1024-Hydro
 L                 210
 N                 1024
 path_gadget       /mnt/su3ctm/SURFS/L210_N1024-Hydro
@@ -63,8 +74,10 @@ ext_groups        .VELOCIraptor.3dfof.catalog_groups
 ext_particles     .VELOCIraptor.3dfof.catalog_particles
 ext_halos         .3dfof.halos
 ext_halolist      .3dfof.halolist
+end
 
-simulation        L210_N1024-Hydro6D-hyades
+parameterset      L210_N1024-Hydro6D-hyades
+simulation        L210_N1024-Hydro
 L                 210
 N                 1024
 path_gadget       /mnt/su3ctm/SURFS/L210_N1024-Hydro
@@ -76,8 +89,10 @@ ext_groups        .VELOCIraptor.6dfof.catalog_groups
 ext_particles     .VELOCIraptor.6dfof.catalog_particles
 ext_halos         .6dfof.halos
 ext_halolist      .6dfof.halolist
+end
 
-simulation        L210_N1024-Hydro6Dsubs-hyades
+parameterset      L210_N1024-Hydro6Dsubs-hyades
+simulation        L210_N1024-Hydro
 L                 210
 N                 1024
 path_gadget       /mnt/su3ctm/SURFS/L210_N1024-Hydro
@@ -89,8 +104,9 @@ ext_groups        .VELOCIraptor.6dfofsubs.catalog_groups
 ext_particles     .VELOCIraptor.6dfofsubs.catalog_particles
 ext_halos         .6dfofsubs.halos
 ext_halolist      .6dfofsubs.halolist
+end
 
-default
+# default parameters, used if not specified under a parameterset
 ext_sorted        .sorted
 ext_groups        .VELOCIraptor.catalog_groups
 ext_particles     .VELOCIraptor.catalog_particles

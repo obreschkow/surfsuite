@@ -1,8 +1,7 @@
 module module_gethalo
 
-   use shared_module_system
-   use shared_module_conversion
-   use shared_module_interface
+   use shared_module_core
+   use shared_module_arguments
    use shared_module_hdf5
    use module_global
    use module_io
@@ -59,7 +58,7 @@ integer*4 function nhalos()
    integer*8            :: filesize
     
    fn = trim(para%path_surfsuite)//trim(snfile(para%snapshot))//trim(para%ext_halolist)
-   call checkfile(fn)
+   call check_file(fn)
    inquire(file=trim(fn),size=filesize)
    nhalos = int(filesize/int(bytes_per_halo,8),4)
 
@@ -189,6 +188,7 @@ subroutine save_halo(outputfile,outputformat,haloid,halo)
    
       ! Group "simulation"
       call hdf5_add_group('simulation')
+      call hdf5_write_data('simulation/parameterset',trim(para%parameterset))
       call hdf5_write_data('simulation/name',trim(para%simulation),'simulation name')
       call hdf5_write_data('simulation/box_l',para%L,'[simulation units] box side length')
       call hdf5_write_data('simulation/box_n',para%N,'cubic root of particle number')

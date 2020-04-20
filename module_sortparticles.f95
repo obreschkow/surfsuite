@@ -1,7 +1,6 @@
 module module_sortparticles
 
-use shared_module_interface
-use shared_module_system
+use shared_module_core
 use module_global
 use module_io
 
@@ -231,7 +230,7 @@ subroutine task_getgadgetproperties
    np_tot = 0
    do i = 0,nfiles_gadget_unsorted-1
       fn = filename(i,para%path_gadget,snfile(para%snapshot))
-      call checkfile(fn)
+      call check_file(fn)
       open(1,file=trim(fn),action='read',form='unformatted',status='old')
       read(1) np
       close(1)

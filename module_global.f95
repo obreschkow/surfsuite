@@ -1,9 +1,8 @@
 module module_global
 
-   character(*),parameter  :: version = '0.24'
-
    type type_para
       character(len=255)   :: parameterfile
+      character(len=255)   :: parameterset
       character(len=255)   :: simulation
       integer*4            :: snapshot
       real*4               :: L ! box side length in simulation units
