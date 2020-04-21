@@ -56,7 +56,8 @@ QUICK START ON A GENERIC MACHINE
 QUICK START ON ICRAR-HYADES
 ====================================================================================================================
 
-# setup
+# install and compile surfsuite in your home directory
+cd ~
 rm -rf surfsuite/ # remove previous surfsuite directory
 git clone https://github.com/obreschkow/surfsuite # install updated version
 cd surfsuite # change to surfsuite directory
@@ -136,7 +137,7 @@ Optional arguments used by all routines
 
 -parameterset (default is the first set in parameter-file): specifies the set of parameters read from the in the parameterfile.
  If the -parameterset option is specified, the parameters listed under this particular tag will be loaded.
- Otherwise the parameters under the first-listed parameterset and outside any parameterset will be adopted.
+ Otherwise the parameters under the parameterset "L210_N1024-Hydro3D" and outside any parameterset will be adopted.
 
 -snapshot (default set in parameter-file): overwrites the 'snapshot' number given in parameters.txt to allow
  a quick access to a different snapshot, keeping all the other parameters identical.

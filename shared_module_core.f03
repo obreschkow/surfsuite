@@ -108,13 +108,14 @@ subroutine start_output(title)
 
 end subroutine start_output
 
-subroutine stop_output
+subroutine stop_output(delete_logfile)
 
    ! close output on screen/logfile and write total time taken
 
    implicit none
-   integer*8   :: time_close
-   integer*8   :: time_rate
+   logical*4,intent(in),optional :: delete_logfile ! if true and if a logfile exists, it will be deleted
+   integer*8                     :: time_close
+   integer*8                     :: time_rate
    
    if (time_start==-1) call deverror('stop_output cannot be called without first calling start_output')
    
@@ -122,6 +123,16 @@ subroutine stop_output
    
    call out('TOTAL WALL TIME: '//sec2time(real(time_close-time_start,8)/time_rate))
    call hline
+   
+   if (present(delete_logfile)) then
+      if (delete_logfile) then
+         if (logfile_open) then
+            call delete_file(logfile_name)
+         end if
+      end if
+   end if
+   
+   logfile_open = .false.
 
 end subroutine stop_output
 
@@ -180,12 +191,17 @@ subroutine start_logfile
    
    ! basic checks
    if (logfile_open) call deverror('do not call start_logfile more than once')
-   if (trim(logfile_name)=='') call deverror('do not call start_logfile before defining a logfile_name')
+   if (isempty(logfile_name)) call deverror('do not call start_logfile before defining a non-empty logfile_name')
    
    ! check if path exists and has read+write permission
    do i = len(trim(logfile_name)),2,-1
       if (logfile_name(i:i)==separator) then
-         call check_file(logfile_name(1:i),'rw')
+         if (exists(logfile_name(1:i))) then
+            call check_file(logfile_name(1:i),'rw')
+         else
+            call make_path(logfile_name(1:i))
+            call check_file(logfile_name(1:i),'rw')
+         end if
          exit
       end if
    end do
@@ -445,7 +461,9 @@ end function sec2time
 logical*4 function exists(filename)
    
    implicit none
-   character(len=*),intent(in)   :: filename ! path of file name
+   character(len=*),intent(in)      :: filename ! path of file name
+   
+   if (isempty(filename)) call error('attempting to check existence of empty filename')
    inquire(file=trim(filename), exist=exists)
    
 end function exists
@@ -520,11 +538,11 @@ subroutine delete_file(filename)
 
    implicit none
    character(*),intent(in) :: filename
-   integer*4               :: stat
+   integer*4               :: status
    
-   call check_file(filename,'rwx')
-   open(logfile_unit, file=trim(filename), iostat=stat, status='old')
-   if (stat == 0) close(logfile_unit, status='delete')   
+   call check_file(filename,'rw')
+   status = system('rm -r '//trim(filename))
+   if (status.ne.0) call error('could not delete file ',trim(filename))
    
 end subroutine delete_file
 

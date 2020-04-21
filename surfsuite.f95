@@ -21,7 +21,7 @@ program surfsuite
    ! handle general options
    call get_option_value(para%parameterfile,'-parameterfile','parameters.txt')
    call set_parameterfile(para%parameterfile)
-   call get_option_value(para%parameterset,'-parameterset','')
+   call get_option_value(para%parameterset,'-parameterset','L210_N1024-Hydro3D')
    call set_parameterset(para%parameterset)
    
    ! load parameters

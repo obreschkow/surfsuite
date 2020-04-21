@@ -34,8 +34,7 @@
 ! e.g. the parameters between the lines 'parameterset abc' and 'end', as well as the parameters outside any parameterset, e.g.
 ! those listed at the end under '# default parameters' are read. If a parameter appears in the parameterset *and* outside, the value
 ! in the parameterset is used. Multiple parametersets of the same name are allowed, as long as they do not repeat parameters.
-! If the variable parameterset is not specified, i.e. parameterset='', the effect is as if this variable is set to the first set,
-! e.g. parameterset='abc'.
+! If the variable parameterset is not specified, parameters in parametersets are ignored.
 ! **********************************************************************************************************************************
 
 module shared_module_parameters
@@ -160,7 +159,6 @@ subroutine handle_parameters
                & trim(current_set)//' has been terminated with "end".')
                inside_set = .true.
                current_set = trim(value)
-               if (isempty(parameterset)) parameterset = trim(current_set)
                reading = (trim(current_set)==trim(parameterset))
                if (reading) set_found = .true.
                
