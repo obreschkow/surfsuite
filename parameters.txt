@@ -1,4 +1,4 @@
-parameterset      L210_N1024-Hydro3D
+parameterset*     L210_N1024-Hydro3D (no substructure)
 simulation        L210_N1024-Hydro
 L                 210
 N                 1024
@@ -13,7 +13,7 @@ ext_halos         .3dfof.halos
 ext_halolist      .3dfof.halolist
 end
 
-parameterset      L210_N1024-Hydro6D
+parameterset      L210_N1024-Hydro6D (no substructure)
 simulation        L210_N1024-Hydro
 L                 210
 N                 1024

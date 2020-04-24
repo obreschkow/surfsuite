@@ -14,22 +14,22 @@ program surfsuite
    implicit none
    
    ! start user interface
-   call set_version('0.30')
+   call set_version('0.31')
    call handle_arguments(require_task=.true.)
    call start_output
    
    ! handle general options
    call get_option_value(para%parameterfile,'-parameterfile','parameters.txt')
    call set_parameterfile(para%parameterfile)
-   call get_option_value(para%parameterset,'-parameterset','L210_N1024-Hydro3D')
+   call get_option_value(para%parameterset,'-parameterset','')
    call set_parameterset(para%parameterset)
    
    ! load parameters
    call load_parameters
-   para%parameterset = trim(parameterset)
+   para%parameterset = parameterset ! this is in case of a default parameterset
    
    ! overwrite default snapshot, if option -snapshot given
-   call get_option_value(para%snapshot,'-snapshot')
+   call get_option_value(para%snapshot,'-snapshot',int(para%snapshot,4)) ! int4-conversion helps avoid warning of in=out
    
    ! run tasks
    if (istask('simulation',require_value=.false.,require_options=.false.)) then

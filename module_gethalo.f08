@@ -233,6 +233,7 @@ subroutine write_halo_properties(haloid,halo)
    implicit none
    integer*4,intent(in)                   :: haloid
    type(type_halo),intent(in)             :: halo
+   call out('Parameterset:  ',trim(para%parameterset))
    call out('Simulation:    ',trim(para%simulation))
    call out('Snapshot:      ',para%snapshot)
    call out('Halo:          ',haloid)

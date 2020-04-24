@@ -33,9 +33,9 @@ subroutine task_trackhalo
    call get_task_value(haloid)
    
    ! handle options
-   call get_option_value(outputfile,'-outputfile','',required=.true.)
-   call get_option_value(snapshot_min,'-from',0,min=0,required=.true.)
-   call get_option_value(snapshot_max,'-to',0,min=0,required=.true.)
+   call get_option_value(outputfile,'-outputfile')
+   call get_option_value(snapshot_min,'-from',min=0)
+   call get_option_value(snapshot_max,'-to',min=0)
    call get_option_value(subhalos,'-subhalos',.false.)
    call get_option_value(center,'-center',.true.)
    call require_no_options_left
