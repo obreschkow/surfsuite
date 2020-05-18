@@ -27,7 +27,8 @@ v0.22 01/04/2020: fixed documentation, centered velocities in showhalo
 v0.23 07/04/2020: uses new module module_interface to facilitate user interface
 v0.30 15/04/2020: heavily restructured code using shared modules
 v0.31 24/04/2020: default parameterset via "parameterset*"
-v0.32 18/05/2020: minor bug fixes, updated makefile
+v0.32 18/05/2020: updated makefile
+v0.33 18/05/2020: minor bug fixes
 
 Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
 

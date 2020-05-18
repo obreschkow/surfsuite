@@ -140,7 +140,6 @@ subroutine load_parameters
    
    ! check permissions
    call check_file(para%path_surfsuite,'r')
-   call check_file(para%path_analysis,'rw')
    
 end subroutine load_parameters
 
