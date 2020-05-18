@@ -96,7 +96,7 @@ subroutine load_parameters
 
    implicit none
    
-   call handle_parameters
+   call read_parameters
    
    call get_parameter_value(para%simulation,'simulation')
    call get_parameter_value(para%snapshot,'snapshot')
@@ -139,7 +139,7 @@ subroutine load_parameters
    call make_path(para%path_analysis)
    
    ! check permissions
-   call check_file(para%path_surfsuite,'rw')
+   call check_file(para%path_surfsuite,'r')
    call check_file(para%path_analysis,'rw')
    
 end subroutine load_parameters

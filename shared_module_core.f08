@@ -44,7 +44,7 @@ module shared_module_core
    public   :: make_path ! makes new directory and produces error if not allowed
    public   :: dir ! make file path with separators; do not call by multiple threads simultaneously
    public   :: delete_file ! deletes a file, if the user has the rights to do so; other wise produce an error
-      
+   
    ! conversion functions
    public   :: val2str  ! converts any numeric type into character string; do not call by multiple threads simultaneously
    public   :: log2int  ! converts logical type into int*4 of value 0 or 1
@@ -81,6 +81,7 @@ module shared_module_core
    character(len=255),protected  :: version = '0.0'
    character(len=255),protected  :: help = 'Consult the README file for additional information.'
    character(len=255),protected  :: copyright = 'Developed by Danail Obreschkow (danail.obreschkow@icrar.org).'
+   logical,protected             :: has_stopped = .false.
    
    ! constants
    character(1),parameter        :: separator = '/'
@@ -224,26 +225,30 @@ subroutine out(txt,value)
    class(*),intent(in),optional  :: value    ! optional numeric value to be appended to txt
    character(len=255)            :: string
    
-   ! convert input arguments into a single string
-   if (present(value)) then
-      string = txt//val2str(value)
-   else
-      string = txt
-   end if
-      
-   ! output on screen
-   if (verbose) write(*,'(A)') trim(string)
-
-   ! output to logfile      
-   if (logfile_open) then
-      !$OMP CRITICAL (subroutine_out)
-      open(logfile_unit,file=trim(logfile_name),action='write',status='old',position='append',form='formatted')
-      write(logfile_unit,'(A)') trim(string)
-      close(logfile_unit)
-      !$OMP END CRITICAL (subroutine_out)
-   end if
+   !$OMP CRITICAL (subroutine_out)
+   if (.not.has_stopped) then ! to avoid multiple error messages in multi-threading
    
-   just_made_hline = .false.
+      ! convert input arguments into a single string
+      if (present(value)) then
+         string = txt//val2str(value)
+      else
+         string = txt
+      end if
+      
+      ! output on screen
+      if (verbose) write(*,'(A)') trim(string)
+
+      ! output to logfile      
+      if (logfile_open) then
+         open(logfile_unit,file=trim(logfile_name),action='write',status='old',position='append',form='formatted')
+         write(logfile_unit,'(A)') trim(string)
+         close(logfile_unit)
+      end if
+   
+      just_made_hline = .false.
+      
+   end if
+   !$OMP END CRITICAL (subroutine_out)
          
 end subroutine out
 
@@ -271,11 +276,10 @@ subroutine error(txt,value,showhelp)
    
    call out('ERROR: '//txt,value)
    if (present(showhelp)) then
-      if (showhelp) then
-         if (.not.isempty(help)) call out(help)
-      end if
+      if ((showhelp).and.(.not.isempty(help))) call out(help)
    end if
    if (once_made_hline) call hline
+   has_stopped = .true.
    stop
    
 end subroutine error
@@ -290,6 +294,7 @@ subroutine deverror(txt,value)
    
    call out('DEVELOPEPR ERROR: '//txt,value)
    if (once_made_hline) call hline
+   has_stopped = .true.
    stop
    
 end subroutine deverror
@@ -306,6 +311,7 @@ subroutine warning(txt,value)
    call out('WARNING: '//trim(txt),value)
    if (stop_at_warnings) then
       call hline
+      has_stopped = .true.
       stop
    end if
    
@@ -368,7 +374,7 @@ end subroutine toc
 function val2str(value) result(str)
 
    implicit none
-   class(*),intent(in)        :: value
+   class(*),intent(in)        :: value ! value in any intrinsic numeric type, passed as unlimited polymorphic variable
    character(len=255)         :: txt
    character(:),allocatable   :: str
 
@@ -392,7 +398,7 @@ function val2str(value) result(str)
    
 end function val2str
 
-integer*4 function log2int(a)
+pure elemental integer*4 function log2int(a)
 
    logical*4,intent(in) :: a
    
@@ -404,15 +410,13 @@ integer*4 function log2int(a)
    
 end function log2int
 
-logical*4 function int2log(a)
+pure elemental logical*4 function int2log(a)
 
    integer*4,intent(in)  :: a
-   if (a==1) then
-      int2log = .true.
-   else if (a==0) then
+   if (a==0) then
       int2log = .false.
    else
-      call deverror('Integer cannot be interpreted as logical: ',a)
+      int2log = .true.
    end if
    
 end function int2log

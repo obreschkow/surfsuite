@@ -21,7 +21,7 @@ module shared_module_arguments
    public   :: unknown_task ! display error message for unknown task_name
    
    ! less frequently used
-   public   :: task_exists ! read-only logical flag specifying if a task name is given; use require_task argument in interface_start
+   public   :: task_exists ! read-only logical flag specifying if a task name is given; use require_task argument in handle_arguments
    public   :: task_has_value ! read-only logical flag specifying if the task has a value; normally this is checked with istask()
    public   :: noptions ! read-only integer giving the number of optional arguments provided by the user
    

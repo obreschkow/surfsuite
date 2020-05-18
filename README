@@ -27,6 +27,7 @@ v0.22 01/04/2020: fixed documentation, centered velocities in showhalo
 v0.23 07/04/2020: uses new module module_interface to facilitate user interface
 v0.30 15/04/2020: heavily restructured code using shared modules
 v0.31 24/04/2020: default parameterset via "parameterset*"
+v0.32 18/05/2020: minor bug fixes, updated makefile
 
 Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
 
@@ -62,7 +63,7 @@ cd ~
 rm -rf surfsuite/ # remove previous surfsuite directory
 git clone https://github.com/obreschkow/surfsuite # install updated version
 cd surfsuite # change to surfsuite directory
-module load gfortran/6.3.0 hdf5/1.10.2 # load required modules
+module load gfortran hdf5 # load required modules
 make system=hyades # compile code
 ./surfsuite version # check version
 

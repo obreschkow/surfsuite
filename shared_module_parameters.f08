@@ -6,11 +6,12 @@
 ! The parameter file has to be an ascii-file, with one parameter per line, structured as:
 ! ----------------------------------------------------------------------
 ! # Example file
-! parameter1_name    parameter1_value  # number of marbles
-! parameter2_name    parameter2_value  # name of player
+! parameter1_name    parameter1_value  number of marbles
+! parameter2_name    parameter2_value  name of player
 ! ...
 ! ----------------------------------------------------------------------
 ! Empty lines are ignored, as well as all text following the #-symbol in non-empty lines. Use this symbol for comments.
+! Text that follows the parameter values in the same line is also ignored (e.g. "number of marbles" is ignored). 
 !
 ! Advanced structure
 ! It is possible do define different parameter-sets in a single parameter file, using the syntax:
@@ -46,13 +47,14 @@ module shared_module_parameters
    
    public   :: set_parameterfile
    public   :: set_parameterset
-   public   :: handle_parameters
+   public   :: read_parameters
    public   :: get_parameter_value
    public   :: require_no_parameters_left
    public   :: parameterfile ! read-only
    public   :: parameterset ! read-only, optional name of the user-selected parameterset, set via set_parameterset() or "*"
-   public   :: n_parameters ! read-only, number of read parameters, accessible once handle_parameters has been called
-   public   :: set_autostring ! routine to set a default parameter value, e.g. "auto", for parameters specified elsewhere
+   public   :: n_parameters ! read-only, number of read parameters, accessible once read_parameters has been called
+   public   :: set_auto_string ! routine to set a default parameter value, e.g. "auto", for parameters specified elsewhere
+   public   :: set_auto_parameter
    
    ! handling arguments
    character(len=255),protected  :: parameterfile = ''
@@ -62,9 +64,11 @@ module shared_module_parameters
    character(len=255),protected  :: parameter_name(n_parameters_max)
    character(len=255),protected  :: parameter_value(n_parameters_max)
    logical*4,protected           :: parameter_used(n_parameters_max)
+   logical*4,protected           :: parameter_has_auto_value(n_parameters_max)
    integer*4,protected           :: n_used = 0
    character(len=255),protected  :: used_name(n_parameters_max)
-   character(len=255),protected  :: autostring = ''
+   character(len=255),protected  :: auto_string = ''
+   logical,protected             :: parameters_handled = .false.
    
    interface get_parameter_value
       module procedure get_parameter_value_string
@@ -81,6 +85,7 @@ subroutine set_parameterfile(txt) ! sets parameter file name
 
    implicit none
    character(*),intent(in) :: txt
+   if (parameters_handled) call deverror('call set_parameterset before calling read_parameters')
    parameterfile = txt
 
 end subroutine set_parameterfile
@@ -89,19 +94,50 @@ subroutine set_parameterset(txt) ! sets parameter set name
 
    implicit none
    character(*),intent(in) :: txt
+   if (parameters_handled) call deverror('call set_parameterset before calling read_parameters')
    parameterset = txt
 
 end subroutine set_parameterset
 
-subroutine set_autostring(txt)
+subroutine set_auto_string(txt)
 
    implicit none
    character(*),intent(in) :: txt
-   autostring = trim(adjustl(txt))
+   auto_string = trim(adjustl(txt))
 
-end subroutine set_autostring
+end subroutine set_auto_string
 
-subroutine handle_parameters
+subroutine set_auto_parameter(name,value)
+
+   implicit none
+   character(*),intent(in) :: name
+   class(*),intent(in)     :: value
+   integer*4               :: i
+   
+   if (.not.parameters_handled) call deverror('read_parameters must be called before set_auto_parameter')
+   if (isempty(auto_string)) call deverror('auto_string must be set before calling set_auto_parameter')
+   
+   i = parameter_index(name,.false.)
+   
+   if (i==0) then
+      call error('attempting to assign an automatic value to the parameter "'//trim(name)//&
+      &'", which does not exist in parameterfile')
+   else
+      if (parameter_has_auto_value(i)) then
+         call deverror('the parameter "'//trim(name)//'" can only be set once using set_auto_parameter')
+      else if (parameter_used(i)) then
+         call deverror('the parameter "'//trim(name)//'" has already been used before its call of set_auto_parameter')
+      else
+         if (trim(parameter_value(i))==trim(auto_string)) then
+            parameter_value(i) = val2str(value)
+            parameter_has_auto_value(i) = .true.
+         end if
+      end if
+   end if
+   
+end subroutine set_auto_parameter
+
+subroutine read_parameters
 
    implicit none
    character(255)    :: line
@@ -117,13 +153,14 @@ subroutine handle_parameters
    logical           :: parameter_in_default(n_parameters_max)
    logical           :: parameter_in_set(n_parameters_max)
    
-   if (n_parameters.ne.0) call deverror('only call handle_parameters once')
+   if (parameters_handled) call deverror('only call read_parameters once')
 
    ! check if parameter file exists and if the user has read-access
    call check_file(parameterfile,'r')
    
    ! reset
    parameter_used = .false.
+   parameter_has_auto_value = .false.
    parameter_in_default = .false.
    parameter_in_set = .false.
    
@@ -132,7 +169,7 @@ subroutine handle_parameters
    do
       
       read(1,'(A)',IOSTAT=io) line
-      if (io.ne.0) exit
+      if (io/=0) exit
       if (.not.(isempty(line).or.(line(1:1)=='#'))) then
       
          read(line,*) name
@@ -216,8 +253,10 @@ subroutine handle_parameters
    if (inside_set) call error('parameterfile: the parameterset "'//trim(current_set)//'" must be terminated with "end".')
    if ((.not.set_found).and.(.not.isempty(parameterset))) call error('parameterset "'//trim(parameterset)//'" not found in '//&
    &'parameterfile')
-         
-end subroutine handle_parameters
+   
+   parameters_handled = .true.
+   
+end subroutine read_parameters
 
 subroutine require_no_parameters_left
 
@@ -256,46 +295,39 @@ function parameter_index(name,required) result(index)
 
 end function parameter_index
 
-subroutine get_parameter_value_string(value,name,preset,auto,allowmultiuse,min,max)
+subroutine get_parameter_value_string(value,name,preset,allowmultiuse,min,max)
    implicit none
-   character(*),intent(inout)          :: value    ! value of parameter, must be initialised to an impossible value
+   character(*),intent(out)            :: value    ! value of parameter
    character(*),intent(in)             :: name     ! name of parameter
    character(*),intent(in),optional    :: preset   ! default value, if parameter name not found; if not given, parameter is required
-   character(*),intent(in),optional    :: auto     ! value assigned, if parameter is identical to autostring, set via set_autostring
    logical*4,intent(in),optional       :: allowmultiuse ! if set to true, the same name can be queried multiple times
    integer*4,intent(in),optional       :: min,max  ! optional values defining the min and max length of the trimmed value
    integer*4                           :: i
+   character(255)                      :: val
+   
    call check_multiuse(name,allowmultiuse)
    i = parameter_index(name,required=.not.present(preset))
    if (i==0) then
-      value = preset
+      val = preset
    else
-      if ((.not.isempty(autostring)).and.(trim(parameter_value(i))==trim(autostring))) then
-         if (present(auto)) then
-            if (value==auto) call error('parameter "'//trim(name)//'" has not been set automatically')
-            value = auto
-         else
-            call error('parameter "'//trim(name)//'" cannot be set automatically')
-         end if
-      else
-         value = parameter_value(i)
-      end if
+      val = parameter_value(i)
       parameter_used(i) = .true.
    end if
    if (present(min)) then
-      if (len(trim(value))<min) call error('parameter "'//trim(name)//'" must have at least '//val2str(min)//' characters')
+      if (len(trim(val))<min) call error('parameter "'//trim(name)//'" must have at least '//val2str(min)//' characters')
    end if
    if (present(max)) then
-      if (len(trim(value))>max) call error('parameter "'//trim(name)//'" must have at most '//val2str(max)//' characters')
+      if (len(trim(val))>max) call error('parameter "'//trim(name)//'" must have at most '//val2str(max)//' characters')
    end if
+   value = trim(val)
+   
 end subroutine get_parameter_value_string
 
-subroutine get_parameter_value_int4(value,name,preset,auto,allowmultiuse,min,max)
+subroutine get_parameter_value_int4(value,name,preset,allowmultiuse,min,max)
    implicit none
-   integer*4,intent(inout)       :: value    ! value of parameter, must be initialised to an impossible value
+   integer*4,intent(out)         :: value    ! value of parameter
    character(*),intent(in)       :: name     ! name of parameter
    integer*4,intent(in),optional :: preset   ! default value, if parameter name not found; if not given, the parameter is required
-   integer*4,intent(in),optional :: auto     ! value assigned, if the parameter is identical to autostring, set via set_autostring
    logical*4,intent(in),optional :: allowmultiuse ! if set to true, the same name can be queried multiple times
    integer*4,intent(in),optional :: min,max  ! optional range required for value
    integer*4                     :: i,status
@@ -304,17 +336,8 @@ subroutine get_parameter_value_int4(value,name,preset,auto,allowmultiuse,min,max
    if (i==0) then
       value = preset
    else
-      if ((.not.isempty(autostring)).and.(trim(parameter_value(i))==trim(autostring))) then
-         if (present(auto)) then
-            if (value==auto) call error('parameter "'//trim(name)//'" has not been set automatically')
-            value = auto
-         else
-            call error('parameter "'//trim(name)//'" cannot be set automatically')
-         end if
-      else
-         read(parameter_value(i),*,iostat=status) value
-         if (status.ne.0) call error('non-integer value found for parameter "'//trim(name)//'"')
-      end if
+      read(parameter_value(i),*,iostat=status) value
+      if (status/=0) call error('non-integer value found for parameter "'//trim(name)//'"')
       parameter_used(i) = .true.
    end if
    if (present(min)) then
@@ -325,12 +348,11 @@ subroutine get_parameter_value_int4(value,name,preset,auto,allowmultiuse,min,max
    end if
 end subroutine get_parameter_value_int4
 
-subroutine get_parameter_value_int8(value,name,preset,auto,allowmultiuse,min,max)
+subroutine get_parameter_value_int8(value,name,preset,allowmultiuse,min,max)
    implicit none
-   integer*8,intent(inout)       :: value    ! value of parameter, must be initialised to an impossible value
+   integer*8,intent(out)         :: value    ! value of parameter
    character(*),intent(in)       :: name     ! name of parameter
    integer*8,intent(in),optional :: preset   ! default value, if parameter name not found; if not given, the parameter is required
-   integer*8,intent(in),optional :: auto     ! value assigned, if the parameter is identical to autostring, set via set_autostring
    logical*4,intent(in),optional :: allowmultiuse ! if set to true, the same name can be queried multiple times
    integer*8,intent(in),optional :: min,max  ! optional range required for value
    integer*4                     :: i,status
@@ -339,17 +361,8 @@ subroutine get_parameter_value_int8(value,name,preset,auto,allowmultiuse,min,max
    if (i==0) then
       value = preset
    else
-      if ((.not.isempty(autostring)).and.(trim(parameter_value(i))==trim(autostring))) then
-         if (present(auto)) then
-            if (value==auto) call error('parameter "'//trim(name)//'" has not been set automatically')
-            value = auto
-         else
-            call error('parameter "'//trim(name)//'" cannot be set automatically')
-         end if
-      else
-         read(parameter_value(i),*,iostat=status) value
-         if (status.ne.0) call error('non-integer value found for parameter "'//trim(name)//'"')
-      end if
+      read(parameter_value(i),*,iostat=status) value
+      if (status/=0) call error('non-integer value found for parameter "'//trim(name)//'"')
       parameter_used(i) = .true.
    end if
    if (present(min)) then
@@ -360,12 +373,11 @@ subroutine get_parameter_value_int8(value,name,preset,auto,allowmultiuse,min,max
    end if
 end subroutine get_parameter_value_int8
 
-subroutine get_parameter_value_real4(value,name,preset,auto,allowmultiuse,min,max)
+subroutine get_parameter_value_real4(value,name,preset,allowmultiuse,min,max)
    implicit none
-   real*4,intent(inout)          :: value    ! value of parameter, must be initialised to an impossible value
+   real*4,intent(out)            :: value    ! value of parameter
    character(*),intent(in)       :: name     ! name of parameter
    real*4,intent(in),optional    :: preset   ! default value, if parameter name not found; if not given, the parameter is required
-   real*4,intent(in),optional    :: auto     ! value assigned, if the parameter is identical to autostring, set via set_autostring
    logical*4,intent(in),optional :: allowmultiuse ! if set to true, the same name can be queried multiple times
    real*4,intent(in),optional    :: min,max  ! optional range required for value
    integer*4                     :: i,status
@@ -374,17 +386,8 @@ subroutine get_parameter_value_real4(value,name,preset,auto,allowmultiuse,min,ma
    if (i==0) then
       value = preset
    else
-      if ((.not.isempty(autostring)).and.(trim(parameter_value(i))==trim(autostring))) then
-         if (present(auto)) then
-            if (value==auto) call error('parameter "'//trim(name)//'" has not been set automatically')
-            value = auto
-         else
-            call error('parameter "'//trim(name)//'" cannot be set automatically')
-         end if
-      else
-         read(parameter_value(i),*,iostat=status) value
-         if (status.ne.0) call error('non-numeric value found for parameter "'//trim(name)//'"')
-      end if
+      read(parameter_value(i),*,iostat=status) value
+      if (status/=0) call error('non-numeric value found for parameter "'//trim(name)//'"')
       parameter_used(i) = .true.
    end if
    if (present(min)) then
@@ -395,12 +398,11 @@ subroutine get_parameter_value_real4(value,name,preset,auto,allowmultiuse,min,ma
    end if
 end subroutine get_parameter_value_real4
 
-subroutine get_parameter_value_real8(value,name,preset,auto,allowmultiuse,min,max)
+subroutine get_parameter_value_real8(value,name,preset,allowmultiuse,min,max)
    implicit none
-   real*8,intent(inout)          :: value    ! value of parameter, must be initialised to an impossible value
+   real*8,intent(out)            :: value    ! value of parameter
    character(*),intent(in)       :: name     ! name of parameter
    real*8,intent(in),optional    :: preset   ! default value, if parameter name not found; if not given, the parameter is required
-   real*8,intent(in),optional    :: auto     ! value assigned, if the parameter is identical to autostring, set via set_autostring
    logical*4,intent(in),optional :: allowmultiuse ! if set to true, the same name can be queried multiple times
    real*8,intent(in),optional    :: min,max  ! optional range required for value
    integer*4                     :: i,status
@@ -409,17 +411,8 @@ subroutine get_parameter_value_real8(value,name,preset,auto,allowmultiuse,min,ma
    if (i==0) then
       value = preset
    else
-      if ((.not.isempty(autostring)).and.(trim(parameter_value(i))==trim(autostring))) then
-         if (present(auto)) then
-            if (value==auto) call error('parameter "'//trim(name)//'" has not been set automatically')
-            value = auto
-         else
-            call error('parameter "'//trim(name)//'" cannot be set automatically')
-         end if
-      else
-         read(parameter_value(i),*,iostat=status) value
-         if (status.ne.0) call error('non-numeric value found for parameter "'//trim(name)//'"')
-      end if
+      read(parameter_value(i),*,iostat=status) value
+      if (status/=0) call error('non-numeric value found for parameter "'//trim(name)//'"')
       parameter_used(i) = .true.
    end if
    if (present(min)) then
@@ -430,12 +423,11 @@ subroutine get_parameter_value_real8(value,name,preset,auto,allowmultiuse,min,ma
    end if
 end subroutine get_parameter_value_real8
 
-subroutine get_parameter_value_logical(value,name,preset,auto,allowmultiuse)
+subroutine get_parameter_value_logical(value,name,preset,allowmultiuse)
    implicit none
-   logical*4,intent(inout)       :: value    ! value of parameter, must be initialised to an impossible value
+   logical*4,intent(out)         :: value    ! value of parameter
    character(*),intent(in)       :: name     ! name of parameter
    logical*4,intent(in),optional :: preset   ! default value, if parameter name not found; if not given, the parameter is required
-   logical*4,intent(in),optional :: auto     ! value assigned, if the parameter is identical to autostring, set via set_autostring
    logical*4,intent(in),optional :: allowmultiuse ! if set to true, the same name can be queried multiple times
    integer*4                     :: i
    call check_multiuse(name,allowmultiuse)
@@ -443,21 +435,12 @@ subroutine get_parameter_value_logical(value,name,preset,auto,allowmultiuse)
    if (i==0) then
       value = preset
    else
-      if ((.not.isempty(autostring)).and.(trim(parameter_value(i))==trim(autostring))) then
-         if (present(auto)) then
-            if (value.eqv.auto) call error('parameter "'//trim(name)//'" has not been set automatically')
-            value = auto
-         else
-            call error('parameter "'//trim(name)//'" cannot be set automatically')
-         end if
+      if (any(trim(parameter_value(i))==(/'0','F','f','N','n'/))) then
+         value = .false.
+      else if (any(trim(parameter_value(i))==(/'1','T','t','Y','y'/))) then
+         value = .true.
       else
-         if (any(trim(parameter_value(i))==(/'0','F','f','N','n'/))) then
-            value = .false.
-         else if (any(trim(parameter_value(i))==(/'1','T','t','Y','y'/))) then
-            value = .true.
-         else
-            call error('parameter "'//trim(name)//'" only takes logical arguments (0/f/F/n/N and 1/t/T/y/Y).')
-         end if
+         call error('parameter "'//trim(name)//'" only takes logical arguments (0/f/F/n/N and 1/t/T/y/Y).')
       end if
       parameter_used(i) = .true.
    end if
@@ -468,6 +451,7 @@ subroutine check_multiuse(name,allowmultiuse)
    character(*),intent(in)       :: name  ! name of parameter
    logical*4,intent(in),optional :: allowmultiuse ! if set true, the same name can be queried multiple times
    integer*4                     :: i,j
+   if (.not.parameters_handled) call deverror('must call read_parameters before using get_parameter_value')
    j = 0
    do i = 1,n_used
       if (trim(used_name(i))==trim(adjustl(name))) then

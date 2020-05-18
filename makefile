@@ -4,43 +4,35 @@
 # mode = compilation mode; allowed modes are 'standard' and 'dev'
 
 ifndef system
-   system = ems
+   system = personal
 endif
 
 ifndef mode
    mode = standard
 endif
 
-cflags = empty
-ifeq ($(mode),standard)
-   cflags = -O3 -fopenmp
-endif
-ifeq ($(mode),dev)
-   cflags = -O0 -fbounds-check -fcheck=bounds -fwhole-file -ffpe-trap=invalid,zero,overflow -Wall -Wunused -Wuninitialized -Wsurprising -Wconversion
-endif
-ifeq ($(cflags),empty)
-   $(info ERROR unknown mode: '${mode}')
-stop
-endif
-
-# custom flags to load the HDF5 library
-sflags = empty
-ifeq ($(system),ems) # private laptop of developer Obreschkow
-   sflags = -I/usr/local/include -L/usr/local/lib -lhdf5_fortran -lhdf5
-endif
-ifeq ($(system),ism49) # private backup laptop of developer Obreschkow
-   sflags = -I/usr/local/lib/hdf5/include -L/usr/local/lib/hdf5/lib -lhdf5_fortran -lhdf5 -L/usr/local/lib
-endif
-ifeq ($(system),hyades) # in-house cluster at ICRAR/UWA
-   sflags = -I/opt/bldr/local/storage/hdf5/1.10.2/include -L/opt/bldr/local/storage/hdf5/1.10.2/lib -lhdf5_fortran -lhdf5
-endif
-ifeq ($(sflags),empty)
+# library flags (depend on the "system" option)
+ifeq ($(system),personal) # private laptop of developer Obreschkow
+   LFLAGS = -I/usr/local/include -L/usr/local/lib -lhdf5_fortran -lhdf5
+else ifeq ($(system),hyades) # in-house cluster at ICRAR/UWA
+   LFLAGS = -I${BLDR_HDF5_INCLUDE_PATH} -L${BLDR_HDF5_LIB_PATH} -lhdf5_fortran -lhdf5
+else
    $(info ERROR unknown system: '${system}')
 stop
 endif
 
-# concatenate compiler flags
-FCFLAGS = -g $(sflags) $(cflags)
+# standard compiler flags (depend on the "mode" option)
+ifeq ($(mode),standard)
+   CFLAGS = -O3 -fopenmp -ffree-line-length-0
+else ifeq ($(mode),dev)
+   CFLAGS = -O0 -g -fbounds-check -fwhole-file -ffpe-trap=invalid,zero,overflow -Wall -Wunused -Wuninitialized -Wsurprising -Wconversion
+else
+   $(info ERROR unknown mode: '${mode}')
+stop
+endif
+
+# concatenate flags
+FCFLAGS =  $(CFLAGS) $(LFLAGS)
 
 # Compiler
 FC = gfortran
