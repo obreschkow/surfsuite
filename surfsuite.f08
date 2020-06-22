@@ -14,7 +14,7 @@ program surfsuite
    implicit none
    
    ! start user interface
-   call set_version('0.33')
+   call set_version('0.34')
    call handle_arguments(require_task=.true.)
    call start_output
    
