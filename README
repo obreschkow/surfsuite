@@ -29,6 +29,7 @@ v0.30 15/04/2020: heavily restructured code using shared modules
 v0.31 24/04/2020: default parameterset via "parameterset*"
 v0.32 18/05/2020: updated makefile
 v0.33 18/05/2020: minor bug fixes
+v0.34 22/06/2020: minor bug fix in shared modules for argument and HDF5 handling
 
 Copyright Danail Obreschkow (danail.obreschkow@icrar.org)
 
