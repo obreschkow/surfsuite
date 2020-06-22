@@ -963,9 +963,11 @@ subroutine hdf5_check_dataset(dataset,expected_rank,expected_dimensions)
    call hdf5_get_dataset_size(dataset,rank=detected_rank,dimensions=detected_dimensions)
    
    if (detected_rank.ne.expected_rank) then
-      call hdf5_close()
-      call error('Expected rank '//val2str(expected_rank)//' but detected rank '//val2str(detected_rank)//&
-      &' in dataset '//trim(dataset))
+      if (.not.((expected_rank==0).and.(detected_dimensions(1)==1))) then
+         call hdf5_close()
+         call error('Expected rank '//val2str(expected_rank)//' but detected rank '//val2str(detected_rank)//&
+         &' in dataset '//trim(dataset))
+      end if
    end if
    
    if ((expected_rank>0).and.(present(expected_dimensions))) then

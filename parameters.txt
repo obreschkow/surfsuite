@@ -28,6 +28,22 @@ ext_halos         .6dfof.halos
 ext_halolist      .6dfof.halolist
 end
 
+# this is the new VR run at different redshifts after Rhys' update of VR
+parameterset      L210_N1024-new
+simulation        L210_N1024-Hydro
+L                 210
+N                 1024
+path_gadget       /Users/do/Data/SURFS/L210_N1024-Hydro/gadget
+path_velociraptor /Users/do/Data/SURFS/L210_N1024-Hydro/velociraptor
+path_surfsuite    /Users/do/Data/SURFS/L210_N1024-Hydro/surfsuite
+path_analysis     /Users/do/Data/SURFS/L210_N1024-Hydro/surfsuite/analysis_new
+file_scalefactors /Users/do/Data/SURFS/L210_N1024-Hydro/snap_scalefactors.txt
+ext_groups        .VELOCIraptor.catalog_groups
+ext_particles     .VELOCIraptor.catalog_particles
+ext_halos         .new.halos
+ext_halolist      .new.halolist
+end
+
 parameterset      L210_N512
 simulation        L210_N512
 L                 210
