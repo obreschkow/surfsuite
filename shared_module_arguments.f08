@@ -95,7 +95,7 @@ subroutine handle_arguments(require_task,require_options)
    call set_logfile_name(value_logfile_name)
    
    ! start output on screen, as specified by options -verbose (default: false if logfile set, otherwise true)
-   call get_option_value(value_verbose,'-verbose',trim(value_logfile_name)=='')
+   call get_option_value(value_verbose,'-verbose',isempty(value_logfile_name))
    call set_verbose(value_verbose)
 
 end subroutine handle_arguments

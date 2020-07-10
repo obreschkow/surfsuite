@@ -6,15 +6,15 @@
 ! The parameter file has to be an ascii-file, with one parameter per line, structured as:
 ! ----------------------------------------------------------------------
 ! # Example file
-! parameter1_name    parameter1_value  number of marbles
-! parameter2_name    parameter2_value  name of player
+! parameter1_name    parameter1_value  optional description
+! parameter2_name    parameter2_value  optional description
 ! ...
 ! ----------------------------------------------------------------------
-! Empty lines are ignored, as well as all text following the #-symbol in non-empty lines. Use this symbol for comments.
-! Text that follows the parameter values in the same line is also ignored (e.g. "number of marbles" is ignored). 
+! Empty lines and lines starting with "#" are ignored, as well as all the text that follows the parameter values in the same line
+! (e.g. "optional description" in the example above). 
 !
 ! Advanced structure
-! It is possible do define different parameter-sets in a single parameter file, using the syntax:
+! It is possible do define different parameter-sets in a single parameter file, using the following syntax:
 ! ----------------------------------------------------------------------
 ! parameterset abc
 ! parameter1_name    parameter1_value
@@ -33,10 +33,30 @@
 ! ----------------------------------------------------------------------
 ! If the protected variable parameterset is non-empty, e.g. parameterset='abc', the parameters listed in this parameterset, e.g.
 ! between the lines "parameterset abc" and "end" overwrite the default parameters specified outside the parameterset. The user can
-! mark at most one parameterset in the parameterfile as the default parameterset using an asterix: "parameterset* abc". This
+! mark at most one parameterset in the parameterfile as the default parameterset using an asterix, e.g. "parameterset* abc". This
 ! parameterset is taken as the default, if the variable parameterset is empty. If no parameterset is marked as default and if the
 ! variable parameterset is empty, all parameters in parametersets are ignored. Multiple parametersets of the same name are allowed,
 ! as long as they do not repeat parameters.
+!
+! Example code:
+! character(255)  :: parameter_filename
+! character(255)  :: parameter_set
+! real            :: x
+! integer         :: y
+! character(20)   :: s
+! logical         :: l
+! call get_option_value(parameter_filename,'-parameterfile','parameters.txt')
+! call set_parameterfile(trim(parameter_filename))
+! call get_option_value(parameter_set,'-parameterset','')
+! call set_parameterset(parameter_set)
+! call read_parameters
+! call set_auto_string('auto')
+! call set_auto_parameter('parameter1_name',0.5) ! this value will be assigned if parameter1 is set to 'auto' in the parameter file
+! call get_parameter_value(x,'parameter1_name',0.3,min=0.0,max=1.0) ! 0.3 is the default if the parameter is not present in the file
+! call get_parameter_value(y,'parameter2_name',max=10) ! no default value given => parameter is required
+! call get_parameter_value(s,'parameter3_name','na')
+! call get_parameter_value(l,'parameter4_name',.true.)
+! call require_no_parameters_left ! produces an error, if there are additional parameters
 ! **********************************************************************************************************************************
 
 module shared_module_parameters

@@ -42,6 +42,7 @@ module shared_module_core
    public   :: exists ! logical function checks if file or path exists
    public   :: check_file ! subroutine checks if file or path exists, if not produce error (optionally checks permissions)
    public   :: make_path ! makes new directory and produces error if not allowed
+   public   :: remove_path ! deletes directory (inclusive subdirectories) and produces error if not allowed
    public   :: dir ! make file path with separators; do not call by multiple threads simultaneously
    public   :: delete_file ! deletes a file, if the user has the rights to do so; other wise produce an error
    
@@ -508,6 +509,17 @@ subroutine make_path(path)
    if (status.ne.0) call error('you do not have permission to create the directory: '//trim(path))
    
 end subroutine make_path
+
+subroutine remove_path(path)
+
+   implicit none
+   character(*),intent(in) :: path
+   integer*4               :: status
+   
+   status = system('rm -rf '//trim(path))
+   if (status.ne.0) call error('you do not have permission to remove the directory: '//trim(path))
+   
+end subroutine remove_path
 
 function dir(s1,s2,s3,s4,s5,s6,s7,s8,s9,ispath) result(out)
 
