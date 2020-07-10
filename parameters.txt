@@ -78,7 +78,7 @@ file_scalefactors /Users/do/Data/SURFS/L210_N1536/snap_scalefactors.txt
 end
 
 # this is the new VR run at different redshifts after Rhys' update of VR
-parameterset      L210_N1024-Hydro-new
+parameterset      L210_N1024-Hydro-new-hyades
 simulation        L210_N1024-Hydro
 L                 210
 N                 1024
