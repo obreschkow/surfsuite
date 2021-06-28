@@ -13,6 +13,7 @@ module module_showhalo
    
    private
    public   :: task_showhalo
+   public   :: load_halo_particles_at_different_snapshot
 
    type type_display_options
       integer*4   :: mode
@@ -79,19 +80,20 @@ subroutine task_showhalo
 
 end subroutine task_showhalo
 
-subroutine load_halo_particles_at_different_snapshot(haloid,include_subhalos,at)
+subroutine load_halo_particles_at_different_snapshot(haloid,include_subhalos,at,supressverbose)
 
    ! this calls load_halo_evolving_particles for a single snapshot "at"
 
    implicit none
-   integer*4,intent(in) :: haloid
-   logical,intent(in)   :: include_subhalos
-   integer*4,intent(in) :: at
-   integer*4            :: d
-   real*4,allocatable   :: x(:,:,:)
-   real*4,allocatable   :: v(:,:,:)
+   integer*4,intent(in)          :: haloid
+   logical,intent(in)            :: include_subhalos
+   integer*4,intent(in)          :: at
+   logical,optional,intent(in)   :: supressverbose
+   integer*4                     :: d
+   real*4,allocatable            :: x(:,:,:)
+   real*4,allocatable            :: v(:,:,:)
 
-   call load_halo_evolving_particles(haloid,include_subhalos,.false.,at,at,x,v)
+   call load_halo_evolving_particles(haloid,include_subhalos,.false.,at,at,x,v,supressverbose)
    do d = 1,3
       p(:)%x(d) = x(:,d,at)
       p(:)%v(d) = v(:,d,at)

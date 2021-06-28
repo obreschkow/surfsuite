@@ -93,7 +93,7 @@ ext_halos         .new.halos
 ext_halolist      .new.halolist
 end
 
-parameterset      L210_N1024-Hydro3D-hyades
+parameterset      L210_N1024-Hydro3D-hyades (no substructure)
 simulation        L210_N1024-Hydro
 L                 210
 N                 1024
@@ -108,7 +108,7 @@ ext_halos         .3dfof.halos
 ext_halolist      .3dfof.halolist
 end
 
-parameterset      L210_N1024-Hydro6D-hyades
+parameterset      L210_N1024-Hydro6D-hyades (no substructure)
 simulation        L210_N1024-Hydro
 L                 210
 N                 1024

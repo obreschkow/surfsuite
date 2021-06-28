@@ -118,7 +118,7 @@ subroutine task_trackhalo
    
 end subroutine task_trackhalo
    
-subroutine load_halo_evolving_particles(haloid,include_subhalos,center,snapshot_min,snapshot_max,x,v)
+subroutine load_halo_evolving_particles(haloid,include_subhalos,center,snapshot_min,snapshot_max,x,v,supressverbose)
 
    implicit none
    integer*4,intent(in)                :: haloid
@@ -127,6 +127,7 @@ subroutine load_halo_evolving_particles(haloid,include_subhalos,center,snapshot_
    integer*4,intent(in)                :: snapshot_min,snapshot_max ! snapshot range
    real*4,allocatable,intent(out)      :: x(:,:,:)
    real*4,allocatable,intent(out)      :: v(:,:,:)
+   logical,optional,intent(in)         :: supressverbose
    integer*4                           :: n,i
    integer*4                           :: ifileold,sn
    integer*8                           :: id,j
@@ -135,6 +136,7 @@ subroutine load_halo_evolving_particles(haloid,include_subhalos,center,snapshot_
    integer*4,allocatable               :: ifile(:)
    integer*8,allocatable               :: position(:),list(:,:)
    real*4                              :: shift1(3),shift2(3)
+   logical                             :: verbose
 
    call load_halo_particles(haloid,include_subhalos)
    if (center) then
@@ -142,6 +144,11 @@ subroutine load_halo_evolving_particles(haloid,include_subhalos,center,snapshot_
    else
       shift1 = 0
       shift2 = 0
+   end if
+   
+   verbose=.true.
+   if (present(supressverbose)) then
+      if (supressverbose) verbose=.false.
    end if
 
    n = size(p)
@@ -167,7 +174,7 @@ subroutine load_halo_evolving_particles(haloid,include_subhalos,center,snapshot_
    ! retrieve particle information
    do sn = snapshot_min,snapshot_max
    
-      call out('Process ',trim(snfile(sn)))
+      if (verbose) call out('Process ',trim(snfile(sn)))
 
       ifileold = -1
 
