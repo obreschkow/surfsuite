@@ -1,4 +1,19 @@
-parameterset*     L210_N1024-Hydro3D (no substructure)
+parameterset*     L210_N1024-Hydro3D-new (with substructure, new runs by Jie for all z)
+simulation        L210_N1024-Hydro
+L                 210
+N                 1024
+path_gadget       /Users/do/Data/SURFS/L210_N1024-Hydro/gadget
+path_velociraptor /Users/do/Data/SURFS/L210_N1024-Hydro/velociraptor
+path_surfsuite    /Users/do/Data/SURFS/L210_N1024-Hydro/surfsuite
+path_analysis     /Users/do/Data/SURFS/L210_N1024-Hydro/surfanalysis/analysis_3d_new
+file_scalefactors /Users/do/Data/SURFS/L210_N1024-Hydro/snap_scalefactors.txt
+ext_groups        .VELOCIraptor.catalog_groups
+ext_particles     .VELOCIraptor.catalog_particles
+ext_halos         .3dfof.new.halos
+ext_halolist      .3dfof.new.halolist
+end
+
+parameterset      L210_N1024-Hydro3D (no substructure)
 simulation        L210_N1024-Hydro
 L                 210
 N                 1024
@@ -28,15 +43,15 @@ ext_halos         .6dfof.halos
 ext_halolist      .6dfof.halolist
 end
 
-# this is the new VR run at different redshifts after Rhys' update of VR
-parameterset      L210_N1024-Hydro-new
+# this is the new VR run at different redshifts after Rhys' update of VR (with substructure)
+parameterset      L210_N1024-Hydro6D-new
 simulation        L210_N1024-Hydro
 L                 210
 N                 1024
 path_gadget       /Users/do/Data/SURFS/L210_N1024-Hydro/gadget
 path_velociraptor /Users/do/Data/SURFS/L210_N1024-Hydro/velociraptor
 path_surfsuite    /Users/do/Data/SURFS/L210_N1024-Hydro/surfsuite
-path_analysis     /Users/do/Data/SURFS/L210_N1024-Hydro/surfsuite/analysis_new
+path_analysis     /Users/do/Data/SURFS/L210_N1024-Hydro/surfsuite/analysis_6d_new
 file_scalefactors /Users/do/Data/SURFS/L210_N1024-Hydro/snap_scalefactors.txt
 ext_groups        .VELOCIraptor.catalog_groups
 ext_particles     .VELOCIraptor.catalog_particles
@@ -77,15 +92,15 @@ path_analysis     /Users/do/Data/SURFS/L210_N1536/surfsuite/analysis
 file_scalefactors /Users/do/Data/SURFS/L210_N1536/snap_scalefactors.txt
 end
 
-# this is the new VR run at different redshifts after Rhys' update of VR
-parameterset      L210_N1024-Hydro-new-hyades
+# this is the new VR run at different redshifts after Rhys' update of VR (with substructure)
+parameterset      L210_N1024-Hydro6D-new-hyades
 simulation        L210_N1024-Hydro
 L                 210
 N                 1024
 path_gadget       /mnt/su3ctm/SURFS/L210_N1024-Hydro
 path_velociraptor /mnt/su3ctm/SURFS/halo
 path_surfsuite    /mnt/su3ctm/dobreschkow/SURFS/L210_N1024-Hydro
-path_analysis     /mnt/su3ctm/dobreschkow/SURFS/L210_N1024-Hydro/analysis_new
+path_analysis     /mnt/su3ctm/dobreschkow/SURFS/L210_N1024-Hydro/analysis_6d_new
 file_scalefactors /mnt/su3ctm/SURFS/L210_N1024/snap_scalefactors.txt
 ext_groups        .VELOCIraptor.catalog_groups
 ext_particles     .VELOCIraptor.catalog_particles
@@ -106,6 +121,21 @@ ext_groups        .VELOCIraptor.3dfof.catalog_groups
 ext_particles     .VELOCIraptor.3dfof.catalog_particles
 ext_halos         .3dfof.halos
 ext_halolist      .3dfof.halolist
+end
+
+parameterset      L210_N1024-Hydro3D-new-hyades (with substructure, new runs by Jie for all z)
+simulation        L210_N1024-Hydro
+L                 210
+N                 1024
+path_gadget       /mnt/su3ctm/SURFS/L210_N1024-Hydro
+path_velociraptor /mnt/su3ctm/SURFS/halo_3dfof
+path_surfsuite    /mnt/su3ctm/dobreschkow/SURFS/L210_N1024-Hydro
+path_analysis     /mnt/su3ctm/dobreschkow/SURFS/L210_N1024-Hydro/analysis_3d_new
+file_scalefactors /mnt/su3ctm/SURFS/L210_N1024/snap_scalefactors.txt
+ext_groups        .VELOCIraptor.catalog_groups
+ext_particles     .VELOCIraptor.catalog_particles
+ext_halos         .3dfof.new.halos
+ext_halolist      .3dfof.new.halolist
 end
 
 parameterset      L210_N1024-Hydro6D-hyades (no substructure)

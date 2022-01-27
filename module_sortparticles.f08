@@ -198,7 +198,7 @@ subroutine split_particles_into_sort_files
    ! final checks
    if (iparticles_tot.ne.nparticles_tot) call error('wrong particle count.')
    if (xmin<0) call error('xmin should not be smaller than 0.')
-   if (xmin>para%L) call error('xmin should not be larger than box length L.')
+   if (xmax>para%L) call error('xmax should not be larger than box length L.')
    if (idmin.ne.1) call error('minimal particle ID must be 1.')
    if (idmax.ne.nparticles_tot) call out('maximal particle ID must be equal to the number of particles.')
    
